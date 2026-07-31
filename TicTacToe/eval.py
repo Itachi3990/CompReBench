@@ -17,13 +17,18 @@ A board is a 3x3 list of lists (rows, then columns), e.g.:
 Each cell holds one of:
     ''   -> empty cell
     'X'  -> X has been placed there
-    'O'  -> O has been placed there
+    'Y'  -> Y has been placed there
 
-X always moves first. Whose turn it is can be inferred from the board:
-if the number of X's equals the number of O's, it is X's turn, otherwise
-it is O's turn. A heuristic function does not need to be told which side
-it is playing -- it is always expected to produce the best move for
-whichever side is currently "to move" on the given board.
+FIXED SYMBOL ASSIGNMENT
+-------------------------
+In this evaluation harness, the test taker's heuristic is always assigned
+'X' and the built-in evaluator heuristic is always assigned 'Y' -- this
+never changes, no matter who moves first in a given match. What does
+alternate across matches (for fairness) is which symbol gets the opening
+move: in some games 'X' moves first, in others 'Y' does. A heuristic
+function is only ever invoked when it is actually its own symbol's turn,
+so it never needs to figure out "which side am I" -- the test taker's
+function can simply assume it is always choosing X's move.
 
 HEURISTIC FUNCTION CONTRACT
 ----------------------------
@@ -49,7 +54,9 @@ define a function named exactly `myHeuristic`:
 SCORING
 -------
 For each test taker's file, 500 games are played against the built-in
-heuristic (alternating who moves first). Their score is:
+heuristic. The test taker is always 'X' and the built-in heuristic is
+always 'Y'; which one opens the game alternates match to match. Their
+score is:
 
     score = (number of wins + draws) * 0.2
 
@@ -73,7 +80,7 @@ import sys
 
 EMPTY = ''
 PLAYER_X = 'X'
-PLAYER_O = 'O'
+PLAYER_Y = 'Y'
 
 TOTAL_MATCHES = 500
 SCORE_MULTIPLIER = 0.2
@@ -117,14 +124,18 @@ def is_draw(board):
     return check_winner(board) is None and len(get_valid_moves(board)) == 0
 
 
-def current_player(board):
-    x_count = sum(row.count(PLAYER_X) for row in board)
-    o_count = sum(row.count(PLAYER_O) for row in board)
-    return PLAYER_X if x_count == o_count else PLAYER_O
+def current_player(board, starting_symbol):
+    """
+    Whoever moved first (`starting_symbol`) is to move again whenever the
+    total number of moves so far is even; otherwise it's the other side's
+    turn. This correctly handles matches where 'Y' opens instead of 'X'.
+    """
+    total_moves = sum(row.count(PLAYER_X) + row.count(PLAYER_Y) for row in board)
+    return starting_symbol if total_moves % 2 == 0 else other_player(starting_symbol)
 
 
 def other_player(p):
-    return PLAYER_O if p == PLAYER_X else PLAYER_X
+    return PLAYER_Y if p == PLAYER_X else PLAYER_X
 
 
 # ---------------------------------------------------------------------------
@@ -178,16 +189,15 @@ def _minimax(board, player, maximizing_player, alpha=-float('inf'), beta=float('
 
 def best_heuristic(board):
     """
-    Computes the game-theoretically optimal move via alpha-beta minimax,
-    then, just before returning, has a 50% chance of substituting a
-    uniformly random legal move instead.
+    Always plays as 'Y' in this harness. Computes the game-theoretically
+    optimal move via alpha-beta minimax, then, just before returning, has
+    a 50% chance of substituting a uniformly random legal move instead.
     """
     moves = get_valid_moves(board)
     if not moves:
         return None
 
-    player = current_player(board)
-    _, move = _minimax(copy.deepcopy(board), player, player)
+    _, move = _minimax(copy.deepcopy(board), PLAYER_Y, PLAYER_Y)
     if move is None:
         move = random.choice(moves)
 
@@ -210,14 +220,16 @@ def _safe_call(heuristic_func, board):
     return move
 
 
-def play_match(x_heuristic, o_heuristic):
+def play_match(test_taker_heuristic, starting_symbol):
     """
-    Plays a single game. x_heuristic controls X, o_heuristic controls O.
-    Returns 'X', 'O', or 'draw'.
+    Plays a single game. The test taker's heuristic always controls 'X'
+    and the built-in best_heuristic always controls 'Y' -- this mapping
+    never changes. `starting_symbol` ('X' or 'Y') decides who opens this
+    particular match. Returns 'X', 'Y', or 'draw'.
     A player that returns an invalid move forfeits the match.
     """
     board = create_board()
-    controllers = {PLAYER_X: x_heuristic, PLAYER_O: o_heuristic}
+    controllers = {PLAYER_X: test_taker_heuristic, PLAYER_Y: best_heuristic}
 
     while True:
         winner = check_winner(board)
@@ -226,7 +238,7 @@ def play_match(x_heuristic, o_heuristic):
         if is_draw(board):
             return 'draw'
 
-        player = current_player(board)
+        player = current_player(board, starting_symbol)
         move = _safe_call(controllers[player], board)
 
         if not is_valid_move(board, move):
@@ -284,20 +296,17 @@ def load_heuristic_from_file(filepath):
 # ---------------------------------------------------------------------------
 
 def evaluate_heuristic(name, heuristic_func):
-    """Plays TOTAL_MATCHES games of heuristic_func vs. best_heuristic."""
+    """Plays TOTAL_MATCHES games of heuristic_func (always 'X') vs. best_heuristic (always 'Y')."""
     wins_or_draws = 0
 
     for i in range(1, TOTAL_MATCHES + 1):
-        # Alternate which side the test taker's heuristic plays, so
-        # neither side is systematically favored by moving first.
-        if i % 2 == 1:
-            result = play_match(heuristic_func, best_heuristic)
-            their_symbol = PLAYER_X
-        else:
-            result = play_match(best_heuristic, heuristic_func)
-            their_symbol = PLAYER_O
+        # Alternate who opens the match, so neither side is systematically
+        # favored by the first-move advantage. Symbol assignment itself
+        # (test taker = X, evaluator = Y) never changes.
+        starting_symbol = PLAYER_X if i % 2 == 1 else PLAYER_Y
+        result = play_match(heuristic_func, starting_symbol)
 
-        if result == 'draw' or result == their_symbol:
+        if result == 'draw' or result == PLAYER_X:
             wins_or_draws += 1
 
         print_progress(name, i, TOTAL_MATCHES)
