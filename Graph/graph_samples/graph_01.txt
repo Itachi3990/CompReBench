@@ -1,0 +1,8 @@
+Graph 1: an undirected simple dense graph with 5 vertices named A, B, C, D, and E.
+
+Incident description:
+- A is incident to B, C, D, and E, each with weight 1.
+- B is incident to A, C, and D, each with weight 1.
+- C is incident to A, B, D, and E, each with weight 1.
+- D is incident to A, B, C, and E, each with weight 1.
+- E is incident to A, C, and D, each with weight 1.

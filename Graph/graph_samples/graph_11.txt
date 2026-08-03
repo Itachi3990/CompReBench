@@ -1,0 +1,63 @@
+Graph 11: an undirected simple sparse graph with 60 vertices named Y1 through Y60.
+
+Incident description:
+- Y1 is incident to Y2 and Y3, each with weight 1.
+- Y2 is incident to Y1, Y4, and Y5, each with weight 1.
+- Y3 is incident to Y1 and Y6, each with weight 1.
+- Y4 is incident to Y2 and Y7, each with weight 1.
+- Y5 is incident to Y2 and Y8, each with weight 1.
+- Y6 is incident to Y3 and Y9, each with weight 1.
+- Y7 is incident to Y4 and Y10, each with weight 1.
+- Y8 is incident to Y5 and Y11, each with weight 1.
+- Y9 is incident to Y6 and Y12, each with weight 1.
+- Y10 is incident to Y7 and Y13, each with weight 1.
+- Y11 is incident to Y8 and Y14, each with weight 1.
+- Y12 is incident to Y9 and Y15, each with weight 1.
+- Y13 is incident to Y10 and Y16, each with weight 1.
+- Y14 is incident to Y11 and Y17, each with weight 1.
+- Y15 is incident to Y12 and Y18, each with weight 1.
+- Y16 is incident to Y13 and Y19, each with weight 1.
+- Y17 is incident to Y14 and Y20, each with weight 1.
+- Y18 is incident to Y15 and Y21, each with weight 1.
+- Y19 is incident to Y16 and Y22, each with weight 1.
+- Y20 is incident to Y17 and Y23, each with weight 1.
+- Y21 is incident to Y18 and Y24, each with weight 1.
+- Y22 is incident to Y19 and Y25, each with weight 1.
+- Y23 is incident to Y20 and Y26, each with weight 1.
+- Y24 is incident to Y21 and Y27, each with weight 1.
+- Y25 is incident to Y22 and Y28, each with weight 1.
+- Y26 is incident to Y23 and Y29, each with weight 1.
+- Y27 is incident to Y24 and Y30, each with weight 1.
+- Y28 is incident to Y25 and Y31, each with weight 1.
+- Y29 is incident to Y26 and Y32, each with weight 1.
+- Y30 is incident to Y27 and Y33, each with weight 1.
+- Y31 is incident to Y28 and Y34, each with weight 1.
+- Y32 is incident to Y29 and Y35, each with weight 1.
+- Y33 is incident to Y30 and Y36, each with weight 1.
+- Y34 is incident to Y31 and Y37, each with weight 1.
+- Y35 is incident to Y32 and Y38, each with weight 1.
+- Y36 is incident to Y33 and Y39, each with weight 1.
+- Y37 is incident to Y34 and Y40, each with weight 1.
+- Y38 is incident to Y35 and Y41, each with weight 1.
+- Y39 is incident to Y36 and Y42, each with weight 1.
+- Y40 is incident to Y37 and Y43, each with weight 1.
+- Y41 is incident to Y38 and Y44, each with weight 1.
+- Y42 is incident to Y39 and Y45, each with weight 1.
+- Y43 is incident to Y40 and Y46, each with weight 1.
+- Y44 is incident to Y41 and Y47, each with weight 1.
+- Y45 is incident to Y42 and Y48, each with weight 1.
+- Y46 is incident to Y43 and Y49, each with weight 1.
+- Y47 is incident to Y44 and Y50, each with weight 1.
+- Y48 is incident to Y45 and Y51, each with weight 1.
+- Y49 is incident to Y46 and Y52, each with weight 1.
+- Y50 is incident to Y47 and Y53, each with weight 1.
+- Y51 is incident to Y48 and Y54, each with weight 1.
+- Y52 is incident to Y49 and Y55, each with weight 1.
+- Y53 is incident to Y50 and Y56, each with weight 1.
+- Y54 is incident to Y51 and Y57, each with weight 1.
+- Y55 is incident to Y52 and Y58, each with weight 1.
+- Y56 is incident to Y53 and Y59, each with weight 1.
+- Y57 is incident to Y54 and Y60, each with weight 1.
+- Y58 is incident to Y55, each with weight 1.
+- Y59 is incident to Y56, each with weight 1.
+- Y60 is incident to Y57, each with weight 1.

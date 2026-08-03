@@ -1,0 +1,9 @@
+Graph 7: an undirected simple sparse graph with 6 vertices named P, Q, R, S, T, and U.
+
+Incident description:
+- P is incident to Q, each with weight 1.
+- Q is incident to P, R, and S, each with weight 1.
+- R is incident to Q and T, each with weight 1.
+- S is incident to Q and U, each with weight 1.
+- T is incident to R, each with weight 1.
+- U is incident to S, each with weight 1.

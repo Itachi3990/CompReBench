@@ -1,0 +1,11 @@
+Graph 3: an undirected simple dense graph with 8 vertices named V1 through V8.
+
+Incident description:
+- V1 is incident to V2, V3, V4, V5, V6, V7, and V8, each with weight 1.
+- V2 is incident to V1, V3, V4, V5, V6, and V8, each with weight 1.
+- V3 is incident to V1, V2, V4, V5, V7, and V8, each with weight 1.
+- V4 is incident to V1, V2, V3, V6, V7, and V8, each with weight 1.
+- V5 is incident to V1, V2, V3, V6, V7, and V8, each with weight 1.
+- V6 is incident to V1, V2, V4, V5, V7, and V8, each with weight 1.
+- V7 is incident to V1, V3, V4, V5, V6, and V8, each with weight 1.
+- V8 is incident to V1, V2, V3, V4, V5, V6, and V7, each with weight 1.

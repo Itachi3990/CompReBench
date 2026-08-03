@@ -1,0 +1,75 @@
+Graph 12: an undirected simple sparse graph with 72 vertices named Z1 through Z72.
+
+Incident description:
+- Z1 is incident to Z2 and Z3, each with weight 1.
+- Z2 is incident to Z1, Z4, and Z5, each with weight 1.
+- Z3 is incident to Z1 and Z6, each with weight 1.
+- Z4 is incident to Z2 and Z7, each with weight 1.
+- Z5 is incident to Z2 and Z8, each with weight 1.
+- Z6 is incident to Z3 and Z9, each with weight 1.
+- Z7 is incident to Z4 and Z10, each with weight 1.
+- Z8 is incident to Z5 and Z11, each with weight 1.
+- Z9 is incident to Z6 and Z12, each with weight 1.
+- Z10 is incident to Z7 and Z13, each with weight 1.
+- Z11 is incident to Z8 and Z14, each with weight 1.
+- Z12 is incident to Z9 and Z15, each with weight 1.
+- Z13 is incident to Z10 and Z16, each with weight 1.
+- Z14 is incident to Z11 and Z17, each with weight 1.
+- Z15 is incident to Z12 and Z18, each with weight 1.
+- Z16 is incident to Z13 and Z19, each with weight 1.
+- Z17 is incident to Z14 and Z20, each with weight 1.
+- Z18 is incident to Z15 and Z21, each with weight 1.
+- Z19 is incident to Z16 and Z22, each with weight 1.
+- Z20 is incident to Z17 and Z23, each with weight 1.
+- Z21 is incident to Z18 and Z24, each with weight 1.
+- Z22 is incident to Z19 and Z25, each with weight 1.
+- Z23 is incident to Z20 and Z26, each with weight 1.
+- Z24 is incident to Z21 and Z27, each with weight 1.
+- Z25 is incident to Z22 and Z28, each with weight 1.
+- Z26 is incident to Z23 and Z29, each with weight 1.
+- Z27 is incident to Z24 and Z30, each with weight 1.
+- Z28 is incident to Z25 and Z31, each with weight 1.
+- Z29 is incident to Z26 and Z32, each with weight 1.
+- Z30 is incident to Z27 and Z33, each with weight 1.
+- Z31 is incident to Z28 and Z34, each with weight 1.
+- Z32 is incident to Z29 and Z35, each with weight 1.
+- Z33 is incident to Z30 and Z36, each with weight 1.
+- Z34 is incident to Z31 and Z37, each with weight 1.
+- Z35 is incident to Z32 and Z38, each with weight 1.
+- Z36 is incident to Z33 and Z39, each with weight 1.
+- Z37 is incident to Z34 and Z40, each with weight 1.
+- Z38 is incident to Z35 and Z41, each with weight 1.
+- Z39 is incident to Z36 and Z42, each with weight 1.
+- Z40 is incident to Z37 and Z43, each with weight 1.
+- Z41 is incident to Z38 and Z44, each with weight 1.
+- Z42 is incident to Z39 and Z45, each with weight 1.
+- Z43 is incident to Z40 and Z46, each with weight 1.
+- Z44 is incident to Z41 and Z47, each with weight 1.
+- Z45 is incident to Z42 and Z48, each with weight 1.
+- Z46 is incident to Z43 and Z49, each with weight 1.
+- Z47 is incident to Z44 and Z50, each with weight 1.
+- Z48 is incident to Z45 and Z51, each with weight 1.
+- Z49 is incident to Z46 and Z52, each with weight 1.
+- Z50 is incident to Z47 and Z53, each with weight 1.
+- Z51 is incident to Z48 and Z54, each with weight 1.
+- Z52 is incident to Z49 and Z55, each with weight 1.
+- Z53 is incident to Z50 and Z56, each with weight 1.
+- Z54 is incident to Z51 and Z57, each with weight 1.
+- Z55 is incident to Z52 and Z58, each with weight 1.
+- Z56 is incident to Z53 and Z59, each with weight 1.
+- Z57 is incident to Z54 and Z60, each with weight 1.
+- Z58 is incident to Z55 and Z61, each with weight 1.
+- Z59 is incident to Z56 and Z62, each with weight 1.
+- Z60 is incident to Z57 and Z63, each with weight 1.
+- Z61 is incident to Z58 and Z64, each with weight 1.
+- Z62 is incident to Z59 and Z65, each with weight 1.
+- Z63 is incident to Z60 and Z66, each with weight 1.
+- Z64 is incident to Z61 and Z67, each with weight 1.
+- Z65 is incident to Z62 and Z68, each with weight 1.
+- Z66 is incident to Z63 and Z69, each with weight 1.
+- Z67 is incident to Z64 and Z70, each with weight 1.
+- Z68 is incident to Z65 and Z71, each with weight 1.
+- Z69 is incident to Z66 and Z72, each with weight 1.
+- Z70 is incident to Z67, each with weight 1.
+- Z71 is incident to Z68, each with weight 1.
+- Z72 is incident to Z69, each with weight 1.
