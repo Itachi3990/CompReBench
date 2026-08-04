@@ -1,0 +1,5 @@
+Warehouse Night Loop
+
+A courier service is planning a late-night route through several warehouses and loading yards connected by weighted roads. The planner can choose from direct roads, back lanes, and longer bypasses, but every choice should be judged by its effect on the full route.
+
+The vehicle must visit every warehouse exactly once and return to the starting warehouse at the end. The answer should be the closed loop with the minimum total travel cost.

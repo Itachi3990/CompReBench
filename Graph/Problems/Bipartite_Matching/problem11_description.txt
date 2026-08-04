@@ -1,0 +1,7 @@
+Festival Crew Dispatch
+
+A festival operations team has a list of crew members and a list of booths needing support. The compatibility network indicates which crew members can work which booths based on skills and certifications. Each crew member may be used once, and each booth can accept only one crew member.
+
+The team wants to maximize the number of valid assignments. A crew member who can serve several booths should be matched carefully so that the overall count of successful pairings is as large as possible. The final assignment set must contain no repeated crew members and no repeated booths.
+
+The problem is to find the largest disjoint matching between the two groups under the given compatibility links.

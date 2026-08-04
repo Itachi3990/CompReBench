@@ -1,0 +1,7 @@
+Library Assistant Routing
+
+A library is assigning assistants to service desks for a busy afternoon. The compatibility map shows which assistants can handle which desks based on training and schedule. Every assistant can take only one desk, and every desk can be handled by only one assistant.
+
+The library manager wants the largest possible set of valid assistant-desk pairings. An assistant with several possible desks may need to be matched carefully so that less flexible assistants still have a chance. The best result is the maximum number of disjoint compatibility-based assignments.
+
+The underlying question is not about traversal or cost. It is about pairing two distinct groups as fully as possible using the available links.

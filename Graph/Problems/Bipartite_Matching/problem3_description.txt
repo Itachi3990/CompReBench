@@ -1,0 +1,21 @@
+Volunteer Station Pairing
+
+A community event needs to place volunteers into service stations for a single evening. On one side of the compatibility chart are volunteers with different skills and availability windows. On the other side are stations that each need one suitable volunteer. A line between a volunteer and a station means that pairing is allowed.
+
+The event coordinator wants as many valid one-to-one assignments as possible. No volunteer can be assigned to more than one station, and no station can receive more than one volunteer. Some volunteers have many eligible stations, while others have only one. The challenge is to choose the largest possible set of non-overlapping pairings that obey the compatibility links.
+
+The event is busy enough that the assignment has to be efficient and conflict-free. A volunteer who can serve many stations may need to be reserved for the place that would be hardest to fill otherwise. Likewise, a station with very few compatible volunteers can become impossible to staff if its options are not handled carefully. The best matching is therefore the one that keeps the total number of valid pairings as large as possible while respecting every compatibility edge.
+
+The result should maximize the number of matched pairs under those rules, not the total preference of the pairings and not any route through the graph.
+
+That makes the task a structural pairing question rather than a scheduling puzzle with priorities or weighted scores. A large event can have many possible partial assignments, but only some of them allow the full compatible set to be used efficiently. The goal is to select the largest disjoint set of volunteer-station pairs that the compatibility network permits, so the event can be covered as fully as possible without any person or station being reused.
+
+The difficulty is that every assignment interacts with the rest of the board. A volunteer who looks easy to place may be the only good fit for one station, while a station with many possible volunteers can absorb a more flexible person later. The best matching respects those structural constraints and maximizes the total number of valid pairings at once. That is the outcome the coordinator needs in order to build a complete staffing plan for the evening.
+
+The final assignment should therefore be thought of as the largest feasible set of one-to-one matches in the two-group graph. It is not enough for the pairings to look reasonable individually; they must work together as a complete non-overlapping collection. That is the standard the event uses to decide whether the staffing board is ready for the night.
+
+Once the matches are fixed, the coordinator can confidently assign shifts knowing that every chosen volunteer-station pair is compatible and no slot is wasted.
+
+That final completeness is what makes the matching useful in practice. It tells the organizers that they have squeezed the maximum number of valid assignments out of the compatibility map without breaking any of the one-to-one rules.
+
+The outcome is a fully staffed event with no conflicts.

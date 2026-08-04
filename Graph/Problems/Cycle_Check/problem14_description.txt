@@ -1,0 +1,7 @@
+Infrastructure Control Survey
+
+A city infrastructure team has drawn a directed map of pumps, valves, sensors, and controllers. Each arrow shows how information or control passes from one component to another. The team’s main concern is whether some part of the network feeds back into itself and creates a closed repetition.
+
+This is not a shortest route problem, and it is not about reaching a particular destination. The only thing that matters is whether a directed cycle exists somewhere in the graph. A long branching chain with no return is fine. A loop that comes back to an earlier component is not.
+
+The desired answer should indicate clearly whether the directed structure contains a cycle or remains acyclic.

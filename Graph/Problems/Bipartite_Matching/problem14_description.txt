@@ -1,0 +1,7 @@
+Service Desk Staffing
+
+A company’s help center is scheduling staff for several support desks. Staff members are listed on one side of the graph, and desks are listed on the other. A connection indicates that a staff member has the training required for that desk. Each staff member can be used once, and each desk can be filled by only one staff member.
+
+The goal is to fill as many desks as possible without breaking the compatibility rules. Some staff members are flexible and can cover many desks, while others are limited to one or two. The best allocation is the one that produces the maximum number of valid disjoint staff-desk pairings.
+
+The task is therefore to compute the largest feasible matching across the two groups using the available links.

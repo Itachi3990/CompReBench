@@ -1,0 +1,7 @@
+Factory Shift Pairing
+
+A factory has one group of workers and one group of stations that need coverage during a shift. The compatibility chart shows which worker can operate which station safely. Each worker may be assigned to at most one station, and each station may be assigned to at most one worker.
+
+The operations manager wants the most complete schedule possible. That means choosing a large set of one-to-one worker-station matches without reusing any node. Some workers are highly flexible, while others fit only a narrow set of stations. A good solution should preserve as many future options as possible while maximizing the number of valid assignments.
+
+The output should capture the maximum matching size for the two-group compatibility graph.

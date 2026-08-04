@@ -1,0 +1,7 @@
+Compiler Stage Diagram
+
+A compiler team has modeled its processing stages as a directed graph. Source files move through parsing, analysis, optimization, and code generation, but some intermediate stages can send information back to earlier stages for correction. The team wants to know whether the diagram contains a directed loop that could send control or data back to a prior stage indefinitely.
+
+The question is not about stage ordering or best path selection. It is only about the presence of a cycle in the directed edges. If there exists any path that begins at a node and returns to the same node after following arrows, then the graph is cyclic.
+
+The answer should therefore be a direct determination of whether the pipeline has a loop somewhere in its structure.

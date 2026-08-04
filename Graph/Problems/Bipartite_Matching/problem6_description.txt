@@ -1,0 +1,7 @@
+Class Project Teaming
+
+A teacher wants to pair students with project topics for a class assignment. One side of the compatibility board lists students, and the other side lists topics. A line between a student and a topic means the student can reasonably work on that topic. Each student can take only one topic, and each topic can be assigned to only one student.
+
+The goal is to form as many valid student-topic pairings as possible. Some students have many acceptable topics, while others can work on only one or two. The best solution must respect all compatibility links while avoiding conflicts between assignments. A pair is only useful if it does not block a better overall allocation elsewhere.
+
+The answer should therefore be the maximum size of a one-to-one assignment set between the two groups.

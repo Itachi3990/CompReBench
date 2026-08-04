@@ -1,0 +1,7 @@
+Review Board Process Map
+
+A review board has represented its internal decision flow as a directed graph of committees, subcommittees, and escalation points. The concern is that an issue might bounce through the process and eventually return to a committee that has already handled it. Such a return would indicate a structural loop rather than a clean progression.
+
+The board does not need a traversal plan or a list of all routes. It only needs to know whether any directed cycle exists anywhere in the graph. A branch that looks linear may still hide a return path deeper inside the network. The answer must therefore determine whether the directed structure is cyclic.
+
+This is a yes-or-no structural test, not an optimization or enumeration problem.

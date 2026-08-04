@@ -1,0 +1,7 @@
+Conference Room Allocation
+
+An academic conference has speakers on one side and rooms on the other. Each speaker can present in only one room, and each room can host only one speaker in this simplified arrangement. The compatibility links indicate which rooms are suitable for which speakers based on required equipment and seating capacity.
+
+The organizer’s objective is to place as many speakers as possible into distinct rooms without violating the compatibility structure. A speaker with many room options should not be matched in a way that blocks a more constrained speaker unless it is necessary. The end result should be the largest possible set of valid speaker-room pairings.
+
+This is a maximum pairing problem across two separate sets, not a scheduling route and not a weighted optimization.
