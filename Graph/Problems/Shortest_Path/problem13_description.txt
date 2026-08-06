@@ -1,0 +1,5 @@
+Riverside Inspection Move
+
+An inspection crew must move from a riverside depot to an inland checkpoint through a graph of weighted bridges, road segments, and service paths. The map has obvious options and subtle alternatives. Some routes are short but expensive; others require a few more hops but end up cheaper when the weights are totaled.
+
+The crew only needs the best route from the origin to the destination. They do not need to inspect every node, and they do not need to come back to where they started. If an intermediate node helps reduce the total cost, it can be included. The desired output should identify the minimum-cost path between the two endpoints using the edges exactly as given.

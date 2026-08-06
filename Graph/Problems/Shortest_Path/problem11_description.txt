@@ -1,0 +1,5 @@
+Campus Route Selection
+
+A campus shuttle planner must carry riders from one building entrance to another through a web of weighted sidewalks, passages, and service lanes. The planner can choose from several candidate links, each with a different cost. Some look direct but are not efficient in total, while others are slightly longer yet cheaper overall.
+
+Only the start building and the end building matter. The answer should find the minimum-cost travel plan between them, even if the route passes through several intermediate points. The problem is not about touching every building or returning to the origin. It is simply about selecting the lowest-weight connected route between the designated source and destination.

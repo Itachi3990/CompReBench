@@ -1,0 +1,7 @@
+Workshop Mentor Allocation
+
+A training workshop has a list of mentors on one side and project groups on the other. Each mentor can guide at most one group in this simplified setting, and each group can be assigned at most one mentor. The compatibility chart tells which mentors are a suitable fit for which groups.
+
+The organizer wants to make as many valid mentor-group pairings as possible while respecting the compatibility links. A mentor can only be used once, and a group can only appear in one pair. Some mentors have broad expertise, while others fit only a narrow set of groups. The best outcome is the maximum number of compatible one-to-one assignments.
+
+This is a pairing problem across two distinct sets. The task is to select the largest possible collection of disjoint matches that satisfy the compatibility graph.

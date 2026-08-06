@@ -1,0 +1,5 @@
+Manufacturing Control Audit
+
+A factory controller has represented machine dependencies as a directed graph. If one machine’s output feeds another and the second eventually depends back on the first, then the system can loop through the same sequence forever. That would be a serious problem for scheduling and state updates, so the audit is focused on detecting whether any such repetition exists.
+
+The check is not about optimality, shortest routes, or reaching every machine. It is simply about whether the arrow structure permits a closed walk that starts and ends at the same node. Even if the loop is buried deep in a larger graph, it still counts. The answer should therefore say whether the directed network has a cycle somewhere inside it.

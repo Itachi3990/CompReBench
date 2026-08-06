@@ -1,0 +1,7 @@
+Event Logistics Crew Plan
+
+An event planner has separated the available workers into one set and the required booths into another. The graph of possible assignments shows which workers can serve which booths based on certification, location, and shift availability. Each worker may be assigned to at most one booth, and each booth may receive at most one worker.
+
+The planner is trying to maximize the number of valid assignments without violating the one-to-one restriction. A worker with many options should not be wasted on a poor choice if that would reduce the total number of successful pairings. The final result should be the largest feasible set of worker-booth matches allowed by the compatibility links.
+
+The problem is about selecting compatible disjoint pairs from two groups, not about ordering nodes or walking through a network.

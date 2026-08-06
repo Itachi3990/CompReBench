@@ -1,0 +1,5 @@
+Outpost Survey Circuit
+
+A survey team is mapping a chain of research outposts joined by weighted travel corridors. Some corridors are efficient, while others are only worth taking if they improve the full route once all stops are considered.
+
+The team must visit every outpost exactly once and return to the starting outpost at the end. The best route is the minimum-cost closed circuit through the whole set.

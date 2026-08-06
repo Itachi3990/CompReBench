@@ -1,0 +1,5 @@
+Harbor Station Tour
+
+An inspection vessel must move through several harbor stations connected by weighted lanes. The lanes vary in cost, so the best circuit is not always the most obvious one.
+
+Each harbor station must be visited exactly once, and the vessel must return to the starting station at the end. The answer should be the closed route with the lowest total travel cost.

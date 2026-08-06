@@ -1,0 +1,5 @@
+Storage Hub Circuit
+
+A logistics analyst is arranging a route across several storage hubs connected by weighted paths. The path choices are not all equally good, and a route that looks direct may still be more expensive than a slightly longer alternative.
+
+Every hub must appear exactly once in the route, and the trip must end where it started. The correct answer is the cheapest closed loop through the entire network.

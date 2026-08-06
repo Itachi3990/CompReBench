@@ -1,0 +1,5 @@
+Checkpoint Run
+
+An autonomous vehicle is traveling through a network of checkpoints linked by weighted paths. The available paths are not all equally attractive: some are short, some are longer, and some only make sense when considered as part of the whole trip.
+
+The vehicle must pass through every checkpoint exactly once and finish at its starting checkpoint. Among all valid closed routes, the one with the smallest total travel cost is the correct choice.

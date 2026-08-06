@@ -1,0 +1,7 @@
+Warehouse Picker Plan
+
+A warehouse is assigning pickers to picking zones. The left side of the graph lists pickers, and the right side lists zones. A connection means a picker is qualified to work that zone. Each picker can be assigned to only one zone, and each zone can be assigned to only one picker.
+
+The warehouse supervisor wants the maximum number of valid assignments under those rules. A picker with only one feasible zone should be protected from unnecessary conflicts, while a flexible picker may need to be matched strategically to avoid reducing the total count. The best solution is the one that produces the largest possible set of non-overlapping picker-zone pairings.
+
+The objective is maximum one-to-one pairing across two groups connected by compatibility edges.

@@ -1,0 +1,5 @@
+Signal Tower Circuit
+
+A maintenance robot is assigned to service a collection of signal towers arranged in a weighted network. Some routes are short internal links, while others are longer bypasses that can still help lower the overall cost of the complete run.
+
+The robot must visit every tower exactly once and finish at the origin. The correct route is the cheapest closed circuit that covers all towers.

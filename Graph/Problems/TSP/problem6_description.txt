@@ -1,0 +1,5 @@
+Depot Relay Circuit
+
+A fleet coordinator has to move between several depots connected by weighted service roads. Some routes are short but expensive, while others are a little longer yet reduce the overall cost of the entire journey.
+
+The vehicle must include every depot exactly once and return to the depot where it started. The best solution is the cheapest closed circuit that covers the full set.

@@ -1,0 +1,7 @@
+Publication Review Chain
+
+An editorial office has mapped its submission pipeline as a directed graph. Manuscripts move from one desk to another, from reviewer to editor, and sometimes from editor back to reviewer if revisions are required. The concern is that a manuscript may be routed in a way that eventually returns to a desk it has already visited, producing a loop that prevents the process from finishing cleanly.
+
+The editors do not need a schedule or a ranking. They only want to know whether the directed structure contains a closed cycle somewhere in the approval chain. If a path can start at one node, follow the arrows, and arrive back at the same node, the graph is cyclic.
+
+The answer should be a simple structural determination about the presence or absence of such a loop. Nothing about path length, coverage, or optimization is required.

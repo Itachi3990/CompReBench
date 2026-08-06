@@ -1,0 +1,5 @@
+Library Supply Transfer
+
+A city library system needs to transfer a crate of archived books from one branch to another through a connected set of streets and alleys. Some roads are narrow but quick, while others are broad yet long and costly. The origin branch and the destination branch are fixed in advance, and the task is to determine the cheapest way to move between them using only the connections shown in the graph.
+
+There is no requirement to visit all branches, and there is no need to come back to the starting point once the crate arrives. The route may include intermediate stops if they help reduce the total travel cost. What matters is the full accumulated weight from the origin to the destination, not the number of steps alone. The intended answer should therefore identify the minimum-cost travel plan between the two selected nodes.

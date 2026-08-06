@@ -1,0 +1,7 @@
+Document Approval Map
+
+An office has modeled its approval workflow as a directed graph where each arrow shows that one document must pass to another reviewer or department. The concern is that a document might eventually be routed back to a previous reviewer, creating a loop that prevents the process from settling into a clean finish. The diagram includes ordinary forward chains, branching approvals, and a few cross-department links that could hide a repetition.
+
+The task is binary. Either the directed structure contains a closed loop somewhere, or it does not. No schedule is required, no path needs to be reconstructed, and no node ordering is being requested. The only thing the reviewer wants to know is whether the dependency map has a directed cycle hidden inside it.
+
+This makes the problem a structural check rather than an optimization problem. A long chain with no return is acceptable. A branch that eventually routes back into an earlier point is not. The output should therefore answer the simple yes-or-no question of whether the directed graph contains a cycle.

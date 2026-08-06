@@ -1,0 +1,5 @@
+Clinic Logistics Run
+
+Medical supplies must be moved from a central clinic storage room to a satellite care unit using a network of weighted hallways, courtyards, and service corridors. The starting point and the destination are fixed. The route planner must select the cheapest way to complete the transfer.
+
+The supplies can travel through intermediate points if needed, but the final result should be the least costly connected route from the origin to the destination. There is no requirement to revisit the start, and no need to cover every location in the building complex. The graph may contain apparently short options that become expensive once their weights are summed. The desired output is the globally cheapest route between the two chosen nodes.

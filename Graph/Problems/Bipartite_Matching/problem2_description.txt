@@ -1,0 +1,17 @@
+Lab Partner Allocation
+
+A university department is organizing a project fair where students on one side must be paired with labs on the other side. Each student has a small list of labs they are eligible to join based on topic fit, prior experience, and schedule compatibility. Each lab has a limited capacity of one student for this simplified exercise. The department wants to create pairings that respect the eligibility list while using as many students as possible.
+
+The exercise is intentionally strict. A student cannot be assigned to more than one lab, and a lab cannot receive more than one student. A pair is valid only if the student and the lab are linked in the compatibility network. The goal is not to maximize total preference score, because no such score is given. It is also not to chain people through multiple assignments. The question is only how many valid one-to-one pairings can be established simultaneously.
+
+The faculty notes mention that the compatibility network may be sparse. Some students have many acceptable options, while others have only one. If a student with a unique option is not matched carefully, that limitation can reduce the total number of successful assignments. The best outcome is therefore the largest possible set of disjoint student-lab pairings that fit the eligibility links.
+
+The output should reflect a clean matching across two separate groups, where each chosen pair uses one compatible edge and no node is reused. The problem is about selecting the maximum number of such pairings under those rules, not about traversal, reachability, or path length.
+
+The department uses this kind of allocation to keep the project fair balanced. A good matching gives more students a chance to participate while staying within the structural limits of the graph. Since each lab can only host one student in this simplified model, the assignment must be chosen carefully so that early choices do not accidentally block a larger final set. The real objective is to maximize the number of valid matches, not to satisfy a personal ranking or a weighted score.
+
+The important part is that the matching is disjoint: no student appears twice, and no lab appears twice. That makes the problem a clean pairing exercise between two separate groups. Some students may have only one feasible lab, so a careless assignment can reduce the total number of pairs. The best result is therefore the largest compatible set of student-lab matches that can be formed simultaneously.
+
+This style of allocation is common in academic settings because it keeps the process fair while still respecting the practical limits of the available labs. A flexible student can be assigned in several ways, but the final arrangement still has to preserve enough options for the students who are much more restricted. That is why the compatibility graph matters so much: it defines exactly which pairings are legal, and the goal is to use those legal pairings to build the biggest possible matching.
+
+The strongest solution is one that makes the most of the graph without wasting any eligible connection. If a student has only a narrow set of choices, that student has to be placed carefully so the total count does not drop. If the matching is done well, the department gets the maximum number of student-lab pairs that can exist at the same time under the compatibility rules.

@@ -1,0 +1,7 @@
+Medical Placement Match
+
+A hospital is assigning residents to specialty clinics. The left group consists of residents, and the right group consists of clinics. A connection means that the resident has the needed background for that clinic. Each resident can be placed in at most one clinic, and each clinic can accept at most one resident for this simplified model.
+
+The hospital wants to maximize the number of successful placements while obeying the eligibility links. A resident should not be assigned to more than one clinic, and a clinic should not receive more than one resident. The challenge is to choose a largest possible set of compatible resident-clinic pairings that do not overlap.
+
+This is a two-group assignment problem where the objective is maximum valid matching under the given compatibility structure.

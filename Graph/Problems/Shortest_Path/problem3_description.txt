@@ -1,0 +1,15 @@
+Harbor to Hill Route
+
+A freight operator must move a small but urgent shipment from a harbor warehouse to a hilltop depot using a network of weighted roads, ramps, and service lanes. The map includes direct links, indirect connectors, and a few deceptively expensive alternatives that look attractive only until their costs are added up. The operator does not need to inspect every location in the city. The only objective is to travel from the chosen origin to the chosen destination using the available connections in the least costly way possible.
+
+The route may pass through intermediate junctions if doing so lowers the total cost. A route with more segments can still be preferable when each segment is cheap, while a seemingly direct connection may turn out to be the wrong choice if it carries a heavy weight. If two points are not directly connected, they cannot be used as though a road existed between them. The challenge is to reason over the full weighted network and identify the best overall travel plan between the two specified endpoints.
+
+The shipping office cares about this kind of result because a slightly different route can change the entire day’s operation. If the route is too expensive, the shipment may miss the receiving window. If it is too slow, the depot may need to delay downstream scheduling. For that reason, the planner has to think about the total cost of the complete journey rather than making a local choice at each intersection. Even one bad edge can make an otherwise short path inferior to a route with a few more steps but lower cumulative cost.
+
+The route is also useful for operational planning because it tells the freight team whether a direct handoff is actually worth using. In many road networks, a direct connection looks appealing only because it is easy to see, not because it is cheap. A good path may weave through two or three intermediate points and still beat the obvious shortcut. The right answer therefore requires comparing the whole set of reachable options and selecting the smallest total cost from the source to the destination.
+
+In that sense, the task is a compact example of cost-aware planning. The origin and destination are fixed, but the network can still offer many possible ways to connect them. Some routes are simpler to describe, yet more expensive in practice. Others are less obvious but better once the full weight of each edge is counted. The correct output should therefore identify the least expensive valid route through the graph, even if that route is not the most direct-looking one.
+
+That is the essential challenge: choosing the route whose total weight is smallest after all intermediate hops are included. The answer should not privilege the fewest edges or the shortest-looking road. It should privilege the cheapest complete walk from the start node to the end node.
+
+Even a small detour can be worthwhile when it avoids one very expensive edge. That is why the best path has to be computed from the full graph rather than from a local impression of which roads look closest together.

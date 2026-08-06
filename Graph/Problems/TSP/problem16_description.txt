@@ -1,0 +1,5 @@
+Mountain Station Circuit
+
+A relay crew is moving through several mountain stations connected by weighted trails. Some trails are short and direct, while others are longer but may still lower the total cost of the trip when the full network is considered.
+
+Every station must be visited exactly once, and the journey must return to the origin after the final stop. The correct answer is the minimum-cost closed loop through all stations.
