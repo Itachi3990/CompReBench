@@ -3,8 +3,9 @@
 ====================================
 
 This script batch-evaluates a folder of externally-supplied heuristic
-functions against a strong built-in heuristic, 500 games each, and prints
-each test taker's score.
+functions against a strong built-in heuristic, 2,500 games each
+(500 games at each of 5 evaluator accuracy levels), and prints
+each test taker's scores in a table.
 
 BOARD INTERFACE CONTRACT
 -------------------------
@@ -60,18 +61,25 @@ define a function named exactly `myHeuristic`:
 
 SCORING
 -------
-For each test taker's file, 500 games are played against the built-in
-heuristic. The test taker is always 'X' and the built-in heuristic is
-always 'Y'; which one opens the game alternates match to match. Their
-score is:
+For each test taker's file, 2,500 games are played against the built-in
+heuristic -- 500 games at each of 5 evaluator accuracy levels:
+  50%, 65%, 80%, 95%, and 100%.
+
+"Accuracy" here means the probability that the evaluator plays its
+optimal (minimax) move; with probability (1 - accuracy) it plays a
+uniformly random legal move instead.
+
+The test taker is always 'X' and the built-in heuristic is always 'Y';
+which one opens the game alternates match to match. Their score at each
+accuracy level is:
 
     score = (number of wins + draws) * 0.2
 
 OUTPUT
 ------
 For each heuristic file, a single-line progress bar is shown while its
-500 games are played. Once every file has been evaluated, a final table
-of "name: score" is printed to the console.
+2,500 games are played. Once every file has been evaluated, a final table
+of scores at each accuracy level -- plus a grand total -- is printed.
 
 A NOTE ON THE BUILT-IN HEURISTIC'S SEARCH DEPTH
 -------------------------------------------------
@@ -86,9 +94,9 @@ heuristic instead:
     static evaluation function that scores how many "live" (unblocked)
     winning lines each side still has, and how many marks they've already
     placed on each.
-It still keeps a 50% chance of playing a uniformly random legal move
-instead of its computed move (same as the 3x3 version), so test takers
-still have real chances to win or draw.
+The random coin is flipped *before* running the search at each accuracy
+level, so the (relatively expensive) search is skipped whenever its
+result would be discarded anyway.
 """
 
 import copy
@@ -107,9 +115,13 @@ PLAYER_X = 'X'
 PLAYER_Y = 'Y'
 
 BOARD_SIZE = 4
-TOTAL_MATCHES = 500
+MATCHES_PER_LEVEL = 500
 SCORE_MULTIPLIER = 0.2
 HEURISTICS_DIR = 'heuristics'
+
+# Evaluator accuracy levels: probability of playing the optimal move.
+ACCURACY_LEVELS = [0.50, 0.65, 0.80, 0.95, 1.00]
+TOTAL_MATCHES = MATCHES_PER_LEVEL * len(ACCURACY_LEVELS)  # 2500
 
 # Search-depth tuning for the built-in heuristic (see module docstring).
 FULL_SEARCH_THRESHOLD = 8   # <= this many empty cells left -> search to the end of the game
@@ -218,7 +230,8 @@ def other_player(p):
 
 # ---------------------------------------------------------------------------
 # Strong built-in heuristic: depth-aware minimax with alpha-beta pruning,
-# a static line-based evaluator for the early/mid game, and 50% randomness
+# a static line-based evaluator for the early/mid game, and variable
+# accuracy (probability of playing the optimal move).
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
@@ -396,30 +409,38 @@ def _minimax(board, player, maximizing_player, depth, last_move=None,
         return best_score, best_move
 
 
-def best_heuristic(board):
+def make_best_heuristic(accuracy):
     """
-    Always plays as 'Y' in this harness. Computes a strong move via
-    alpha-beta minimax (full-depth once the board is nearly full,
-    depth-limited with a static evaluator otherwise), but has a 50%
-    chance of playing a uniformly random legal move instead. The random
-    coin is flipped *before* running the search, so the (relatively
-    expensive) search is skipped whenever its result would be discarded
-    anyway.
+    Returns a best_heuristic function that plays the optimal minimax move
+    with probability `accuracy`, and a uniformly random legal move otherwise.
+
+    `accuracy` should be a float in [0.0, 1.0].
+      - 1.00 -> always plays the optimal move (hardest)
+      - 0.50 -> plays optimally only half the time (as in the original script)
+
+    The random coin is flipped *before* running the search, so the
+    (relatively expensive) minimax search is skipped whenever its result
+    would be discarded anyway.
     """
-    moves = get_valid_moves(board)
-    if not moves:
-        return None
+    def best_heuristic(board):
+        moves = get_valid_moves(board)
+        if not moves:
+            return None
 
-    if random.random() < 0.5:
-        return random.choice(moves)
+        # With probability (1 - accuracy), play a random move immediately
+        # without running the expensive search.
+        if random.random() >= accuracy:
+            return random.choice(moves)
 
-    empty_cells = len(moves)
-    depth = empty_cells if empty_cells <= FULL_SEARCH_THRESHOLD else LOOKAHEAD_DEPTH
+        empty_cells = len(moves)
+        depth = empty_cells if empty_cells <= FULL_SEARCH_THRESHOLD else LOOKAHEAD_DEPTH
 
-    _, move = _minimax(copy.deepcopy(board), PLAYER_Y, PLAYER_Y, depth)
-    if move is None:
-        move = random.choice(moves)
-    return move
+        _, move = _minimax(copy.deepcopy(board), PLAYER_Y, PLAYER_Y, depth)
+        if move is None:
+            move = random.choice(moves)
+        return move
+
+    return best_heuristic
 
 
 # ---------------------------------------------------------------------------
@@ -435,16 +456,16 @@ def _safe_call(heuristic_func, board):
     return move
 
 
-def play_match(test_taker_heuristic, starting_symbol):
+def play_match(test_taker_heuristic, evaluator_heuristic, starting_symbol):
     """
     Plays a single game. The test taker's heuristic always controls 'X'
-    and the built-in best_heuristic always controls 'Y' -- this mapping
+    and the built-in evaluator_heuristic always controls 'Y' -- this mapping
     never changes. `starting_symbol` ('X' or 'Y') decides who opens this
     particular match. Returns 'X', 'Y', or 'draw'.
     A player that returns an invalid move forfeits the match.
     """
     board = create_board()
-    controllers = {PLAYER_X: test_taker_heuristic, PLAYER_Y: best_heuristic}
+    controllers = {PLAYER_X: test_taker_heuristic, PLAYER_Y: evaluator_heuristic}
 
     while True:
         winner = check_winner(board)
@@ -511,22 +532,108 @@ def load_heuristic_from_file(filepath):
 # ---------------------------------------------------------------------------
 
 def evaluate_heuristic(name, heuristic_func):
-    """Plays TOTAL_MATCHES games of heuristic_func (always 'X') vs. best_heuristic (always 'Y')."""
-    wins_or_draws = 0
+    """
+    Plays MATCHES_PER_LEVEL games at each accuracy level in ACCURACY_LEVELS
+    (TOTAL_MATCHES games in total) of heuristic_func (always 'X') vs. the
+    evaluator (always 'Y'). Returns a list of (wins, draws, losses) tuples,
+    one per accuracy level.
+    """
+    level_results = []
+    match_index = 0
 
-    for i in range(1, TOTAL_MATCHES + 1):
-        # Alternate who opens the match, so neither side is systematically
-        # favored by the first-move advantage. Symbol assignment itself
-        # (test taker = X, evaluator = Y) never changes.
-        starting_symbol = PLAYER_X if i % 2 == 1 else PLAYER_Y
-        result = play_match(heuristic_func, starting_symbol)
+    for accuracy in ACCURACY_LEVELS:
+        evaluator = make_best_heuristic(accuracy)
+        wins = 0
+        draws = 0
+        losses = 0
 
-        if result == 'draw' or result == PLAYER_X:
-            wins_or_draws += 1
+        for i in range(1, MATCHES_PER_LEVEL + 1):
+            match_index += 1
+            # Alternate who opens each match for fairness.
+            starting_symbol = PLAYER_X if i % 2 == 1 else PLAYER_Y
+            result = play_match(heuristic_func, evaluator, starting_symbol)
 
-        print_progress(name, i, TOTAL_MATCHES)
+            if result == PLAYER_X:
+                wins += 1
+            elif result == 'draw':
+                draws += 1
+            else:
+                losses += 1
 
-    return wins_or_draws
+            print_progress(name, match_index, TOTAL_MATCHES)
+
+        level_results.append((wins, draws, losses))
+
+    return level_results
+
+
+# ---------------------------------------------------------------------------
+# Table printer
+# ---------------------------------------------------------------------------
+
+def print_results_table(results):
+    """
+    Prints a formatted table with per-accuracy-level W/D/L breakdown and a
+    grand total score.
+
+    `results` is a list of (name, level_results) where level_results is a
+    list of (wins, draws, losses) tuples aligned with ACCURACY_LEVELS.
+    """
+    # Column headers
+    level_headers = [f"{int(a * 100)}%" for a in ACCURACY_LEVELS]
+    col_name  = "Name"
+    col_total = "Total"
+    wdl_label = "W/D/L"
+
+    # Pre-compute display data
+    display = []
+    for name, level_results in results:
+        wdl_strings = []
+        total_wins_draws = 0
+        for wins, draws, losses in level_results:
+            wdl_strings.append(f"{wins}/{draws}/{losses}")
+            total_wins_draws += wins + draws
+        total_score = round(total_wins_draws * SCORE_MULTIPLIER, 1)
+        display.append((name, wdl_strings, total_score))
+
+    # Column widths
+    name_width = max(len(col_name), max(len(d[0]) for d in display))
+    wdl_width  = max(len(wdl_label), max(
+        max(len(s) for s in d[1]) for d in display
+    ))
+    total_width = max(len(col_total), max(len(str(d[2])) for d in display))
+
+    # Header row
+    header_cells = [col_name.ljust(name_width)]
+    for h in level_headers:
+        header_cells.append(h.center(wdl_width))
+    header_cells.append(col_total.center(total_width))
+    header = " | ".join(header_cells)
+
+    # Sub-header (W/D/L labels)
+    sub_cells = [" " * name_width]
+    for _ in ACCURACY_LEVELS:
+        sub_cells.append(wdl_label.center(wdl_width))
+    sub_cells.append(" " * total_width)
+    sub_header = " | ".join(sub_cells)
+
+    separator = "-+-".join([
+        "-" * name_width,
+        *["-" * wdl_width for _ in ACCURACY_LEVELS],
+        "-" * total_width,
+    ])
+
+    print()
+    print(header)
+    print(sub_header)
+    print(separator)
+
+    for name, wdl_strings, total_score in display:
+        row_cells = [name.ljust(name_width)]
+        for s in wdl_strings:
+            row_cells.append(s.center(wdl_width))
+        row_cells.append(str(total_score).center(total_width))
+        print(" | ".join(row_cells))
 
 
 # ---------------------------------------------------------------------------
@@ -553,13 +660,10 @@ def main():
             sys.stderr.write(f"Skipping '{name}': {exc}\n")
             continue
 
-        wins_or_draws = evaluate_heuristic(name, heuristic_func)
-        score = round(wins_or_draws * SCORE_MULTIPLIER, 1)
-        results.append((name, score))
+        level_results = evaluate_heuristic(name, heuristic_func)
+        results.append((name, level_results))
 
-    print()
-    for name, score in results:
-        print(f"{name}: {score}")
+    print_results_table(results)
 
 
 if __name__ == '__main__':
