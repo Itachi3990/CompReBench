@@ -1,7 +1,8 @@
-Graph 10: an undirected simple sparse graph with 10 vertices named X1 through X10.
+Graph 10: an undirected simple sparse graph with 12 vertices named X1 through X12.
 
 Incident description:
 - X1 is incident to X2 and X3, each with weight 1.
+- X1 is incident to X12, each with weight 7.
 - X2 is incident to X1, X4, and X5, each with weight 1.
 - X3 is incident to X1 and X6, each with weight 1.
 - X4 is incident to X2 and X7, each with weight 1.
@@ -11,3 +12,6 @@ Incident description:
 - X8 is incident to X5, each with weight 1.
 - X9 is incident to X6, each with weight 1.
 - X10 is incident to X7, each with weight 1.
+- X11 is incident to X12, each with weight 5.
+- X12 is incident to X11, each with weight 5.
+- X12 is incident to X1, each with weight 7.

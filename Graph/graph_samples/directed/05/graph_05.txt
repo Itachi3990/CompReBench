@@ -1,0 +1,7 @@
+Graph 5: a directed simple graph with 4 vertices named A through D.
+
+Incident description:
+- A has outgoing edges to B and C, each with weight 1.
+- B has an outgoing edge to D, each with weight 3.
+- C has an outgoing edge to A, each with weight 2.
+- D has no outgoing edges.

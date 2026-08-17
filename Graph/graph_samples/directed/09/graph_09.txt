@@ -1,0 +1,7 @@
+Graph 9: a directed simple graph with 4 vertices named A through D.
+
+Incident description:
+- A has an outgoing edge to B, each with weight 5.
+- B has an outgoing edge to D, each with weight 1.
+- C has outgoing edges to A and D, with weights 2 and 4 respectively.
+- D has an outgoing edge to B, each with weight 3.
