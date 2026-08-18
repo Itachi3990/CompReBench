@@ -1,7 +1,0 @@
-Task Dependency Review
-
-A project manager has modeled task dependencies as a directed graph where each edge means one task must precede another. The concern is that a dependency might eventually lead back to an earlier task, creating a loop in the plan. That would make the schedule impossible to settle into a one-way progression.
-
-The manager is not asking for a full task order, and there is no optimization objective here. The only thing that matters is whether the directed dependency map contains a cycle. A task chain that never returns is fine. A chain that comes back to an earlier point indicates a closed repetition.
-
-The answer should therefore identify whether the graph has at least one directed cycle hidden anywhere inside its links. The size of the graph does not change the nature of the question.

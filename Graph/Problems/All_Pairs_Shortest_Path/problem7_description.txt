@@ -1,5 +1,0 @@
-An urban mobility startup is launching a fleet of autonomous flying taxis. The city has authorized 50 specific rooftop landing pads. Flying between any two pads requires a specific amount of battery power, which depends heavily on distance, altitude changes, and prevailing wind corridors. 
-
-Before officially launching the service, the central dispatch AI needs a complete energy map of the city. It must calculate the absolute minimum battery expenditure required to fly between every possible pair of landing pads. 
-
-By pre-computing the lowest-energy routes for all possible pad-to-pad combinations, the AI can instantly accept or reject customer ride requests based on the current battery level of its airborne fleet.

@@ -1,9 +1,15 @@
-Graph 2: an undirected simple dense graph with 6 vertices named P, Q, R, S, T, and U.
-
-Incident description:
-- P is incident to Q, R, T, and U, each with weight 1.
-- Q is incident to P, R, S, and U, each with weight 1.
-- R is incident to P, Q, S, T, and U, each with weight 1.
-- S is incident to Q, R, T, and U, each with weight 1.
-- T is incident to P, R, S, and U, each with weight 1.
-- U is incident to P, Q, R, S, and T, each with weight 1.
+UNDIRECTED
+6 13
+P Q 1
+P R 1
+P T 1
+P U 1
+Q R 1
+Q S 1
+Q U 1
+R S 1
+R T 1
+R U 1
+S T 1
+S U 1
+T U 1

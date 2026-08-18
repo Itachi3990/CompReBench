@@ -1,5 +1,0 @@
-Remote Base Circuit
-
-A support drone has to move between several remote bases connected by weighted travel links. Some links are direct, while others are more circuitous but may still be part of the best complete route.
-
-The drone must visit every base exactly once and return to the starting base after the final stop. The right answer is the closed path with the least total travel cost.

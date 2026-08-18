@@ -1,5 +1,0 @@
-Civil engineers and urban planners are studying the macro-traffic flow of a major metropolitan area. The city's road network consists of hundreds of major intersections, with the road segments between them having theoretical capacity-based travel times. 
-
-To run complex macroeconomic models on commuting efficiency and the impact of potential road closures, the researchers need a comprehensive, underlying dataset of the city's connectivity. 
-
-They must determine the absolute shortest possible travel time between every intersection and every other intersection in the city. Calculating the optimal path between all possible origins and destinations provides the researchers with a complete, holistic picture of the theoretical efficiency of the entire urban road network.

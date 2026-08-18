@@ -1,5 +1,0 @@
-Mountain Relay Passage
-
-A relay team has to transport a sealed message from a valley base to a ridge station across a terrain map represented as a weighted network. The available roads include winding climbs, direct but costly climbs, and a few side roads that look simple but add extra distance. The team is only concerned with the travel cost from the starting node to the ending node.
-
-The message does not need to travel through every settlement on the map, and the route does not have to return to the origin. Instead, the task is to find the cheapest possible chain of connected roads that gets the message from the source to the destination. Intermediate nodes are allowed whenever they reduce the total cost. The answer should reflect the minimum-weight path between the chosen endpoints.

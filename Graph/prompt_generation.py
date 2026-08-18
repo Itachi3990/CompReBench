@@ -14,8 +14,7 @@ random = random.SystemRandom()
 # ============================================================================
 
 # Set to None to process all combinations, or an integer to limit prompts
-MAX_PROMPTS_COUNT = None  # Change to 4, 10, etc. to limit
-
+MAX_PROMPTS_COUNT = 3  # Change to 4, 10, etc. to limit
 PROBLEMS_FROM_EACH_CATEGORY = 10
 NUMBER_OF_GRAPHS = 10
 # Bias towards selecting last graph folder (tunable)
@@ -70,7 +69,7 @@ Decide which algorithm(s) you would use to solve this problem for the given grap
 
 Whatever algorithm(s) you choose:
 - Clearly state the algorithm name(s).
-- Provide a brief explanation (20–100 words) of why that algorithm is appropriate for this graph and problem.
+- Provide a brief explanation (20–40 words) of why that algorithm is appropriate for this graph and problem.
 
 Your output must EXACTLY follow this format:
 
@@ -91,6 +90,359 @@ def load_file(filepath):
     except Exception as e:
         print(f"Error reading {filepath}: {e}")
         return None
+
+import re
+
+
+def _natural_vertex_key(vertex):
+    """
+    Natural sort key for vertex labels.
+
+    Examples:
+        A, B, C              -> A, B, C
+        V1, V2, V10          -> V1, V2, V10
+        A1, A2, A10          -> A1, A2, A10
+        node1, node2, node10 -> node1, node2, node10
+
+    Non-numeric parts are compared case-insensitively.
+    """
+
+    parts = re.split(r'(\d+)', vertex)
+
+    return tuple(
+        (0, int(part)) if part.isdigit()
+        else (1, part.lower())
+        for part in parts
+        if part
+    )
+
+
+def graph_format_to_description(graph_str):
+    """Convert a structured graph representation into a deterministic,
+    lossless natural-language description suitable for LLM benchmarking."""
+
+    # ============================================================
+    # Parse input
+    # ============================================================
+
+    lines = [
+        line.strip()
+        for line in graph_str.strip().splitlines()
+        if line.strip()
+    ]
+
+    if len(lines) < 2:
+        raise ValueError(
+            "Graph input must contain at least two lines."
+        )
+
+    # ============================================================
+    # Graph type
+    # ============================================================
+
+    graph_type = lines[0].upper()
+
+    if graph_type not in {"DIRECTED", "UNDIRECTED"}:
+        raise ValueError(
+            f"Invalid graph type '{lines[0]}'. "
+            "Expected DIRECTED or UNDIRECTED."
+        )
+
+    # ============================================================
+    # Vertex and edge counts
+    # ============================================================
+
+    header = lines[1].split()
+
+    if len(header) != 2:
+        raise ValueError(
+            "Second line must contain exactly two integers: "
+            "<vertex_count> <edge_count>."
+        )
+
+    try:
+        vertex_count, edge_count = map(int, header)
+    except ValueError:
+        raise ValueError(
+            "Vertex count and edge count must be integers."
+        )
+
+    if vertex_count < 0:
+        raise ValueError("Vertex count cannot be negative.")
+
+    if edge_count < 0:
+        raise ValueError("Edge count cannot be negative.")
+
+    # ============================================================
+    # Parse edges
+    # ============================================================
+
+    edge_lines = lines[2:]
+
+    if len(edge_lines) != edge_count:
+        raise ValueError(
+            f"Declared {edge_count} edges, "
+            f"but found {len(edge_lines)} edge lines."
+        )
+
+    edges = []
+    all_vertices = set()
+
+    for line_number, line in enumerate(edge_lines, start=3):
+
+        parts = line.split()
+
+        if len(parts) != 3:
+            raise ValueError(
+                f"Invalid edge on line {line_number}: '{line}'. "
+                "Expected: <source> <destination> <weight>."
+            )
+
+        source, destination, weight_str = parts
+
+        try:
+            weight = int(weight_str)
+        except ValueError:
+            raise ValueError(
+                f"Invalid edge weight on line {line_number}: "
+                f"'{weight_str}'. Weight must be an integer."
+            )
+
+        edges.append((source, destination, weight))
+
+        all_vertices.add(source)
+        all_vertices.add(destination)
+
+    # ============================================================
+    # Canonical vertex ordering
+    # ============================================================
+
+    # IMPORTANT:
+    # Do NOT preserve first-seen order.
+    #
+    # This gives:
+    #   A, B, C, D
+    #
+    # and:
+    #   V1, V2, V3, ..., V9, V10, V11
+    #
+    # rather than:
+    #   V1, V10, V11, V2, V3, ...
+
+    vertices = sorted(
+        all_vertices,
+        key=_natural_vertex_key
+    )
+
+    # ============================================================
+    # Validate vertex count
+    # ============================================================
+
+    if len(vertices) != vertex_count:
+        raise ValueError(
+            f"Declared {vertex_count} vertices, "
+            f"but found {len(vertices)} unique vertices: "
+            f"{vertices}"
+        )
+
+    # ============================================================
+    # Validate graph structure
+    # ============================================================
+
+    # Simple graph = no self-loops.
+    for source, destination, weight in edges:
+
+        if source == destination:
+            raise ValueError(
+                f"Self-loop detected: {source} -> {destination}. "
+                "This function expects a simple graph."
+            )
+
+    # Check duplicate edges.
+    seen_edges = set()
+
+    for source, destination, weight in edges:
+
+        if graph_type == "DIRECTED":
+
+            edge_key = (source, destination)
+
+        else:
+
+            # Treat P-Q and Q-P as the same undirected edge.
+            edge_key = frozenset((source, destination))
+
+        if edge_key in seen_edges:
+            raise ValueError(
+                f"Duplicate edge detected involving "
+                f"{source} and {destination}."
+            )
+
+        seen_edges.add(edge_key)
+
+    # ============================================================
+    # Group edges by source
+    # ============================================================
+
+    edges_by_source = {
+        vertex: []
+        for vertex in vertices
+    }
+
+    for source, destination, weight in edges:
+
+        edges_by_source[source].append(
+            (destination, weight)
+        )
+
+    # IMPORTANT:
+    # Sort outgoing edges using the same natural vertex ordering.
+    for vertex in edges_by_source:
+
+        edges_by_source[vertex].sort(
+            key=lambda x: _natural_vertex_key(x[0])
+        )
+
+    # ============================================================
+    # Build description
+    # ============================================================
+
+    vertex_list = ", ".join(vertices)
+
+    vertex_word = (
+        "vertex"
+        if vertex_count == 1
+        else "vertices"
+    )
+
+    description = (
+        f"Graph: a {graph_type.lower()} simple weighted graph "
+        f"with {vertex_count} {vertex_word}. "
+        f"The vertices are {vertex_list}.\n"
+    )
+
+    description += (
+        f"The graph contains {edge_count} "
+        f"{'edge' if edge_count == 1 else 'edges'}.\n"
+    )
+
+    description += "Edge information:\n"
+
+    # ============================================================
+    # Directed graph
+    # ============================================================
+
+    if graph_type == "DIRECTED":
+
+        for vertex in vertices:
+
+            outgoing = edges_by_source[vertex]
+
+            if not outgoing:
+
+                description += (
+                    f"- Vertex {vertex} has no outgoing edges.\n"
+                )
+
+                continue
+
+            edge_descriptions = [
+                f"{destination} with weight {weight}"
+                for destination, weight in outgoing
+            ]
+
+            if len(edge_descriptions) == 1:
+
+                description += (
+                    f"- Vertex {vertex} has an outgoing edge "
+                    f"to {edge_descriptions[0]}.\n"
+                )
+
+            else:
+
+                edge_text = ", ".join(
+                    edge_descriptions[:-1]
+                )
+
+                edge_text += (
+                    f", and {edge_descriptions[-1]}"
+                )
+
+                description += (
+                    f"- Vertex {vertex} has outgoing edges "
+                    f"to {edge_text}.\n"
+                )
+
+    # ============================================================
+    # Undirected graph
+    # ============================================================
+
+    else:
+
+        # Construct adjacency information in both directions.
+        neighbors = {
+            vertex: []
+            for vertex in vertices
+        }
+
+        for source, destination, weight in edges:
+
+            neighbors[source].append(
+                (destination, weight)
+            )
+
+            neighbors[destination].append(
+                (source, weight)
+            )
+
+        # Natural-sort every neighbor list.
+        for vertex in neighbors:
+
+            neighbors[vertex].sort(
+                key=lambda x: _natural_vertex_key(x[0])
+            )
+
+        for vertex in vertices:
+
+            incident = neighbors[vertex]
+
+            if not incident:
+
+                description += (
+                    f"- Vertex {vertex} is not connected to "
+                    f"any other vertex.\n"
+                )
+
+                continue
+
+            edge_descriptions = [
+                f"{neighbor} with weight {weight}"
+                for neighbor, weight in incident
+            ]
+
+            if len(edge_descriptions) == 1:
+
+                description += (
+                    f"- Vertex {vertex} is connected to "
+                    f"{edge_descriptions[0]}.\n"
+                )
+
+            else:
+
+                edge_text = ", ".join(
+                    edge_descriptions[:-1]
+                )
+
+                edge_text += (
+                    f", and {edge_descriptions[-1]}"
+                )
+
+                description += (
+                    f"- Vertex {vertex} is connected to "
+                    f"{edge_text}.\n"
+                )
+
+    return description
 
 def save_to_log(message):
     """Append message to LLM log file."""
@@ -466,7 +818,8 @@ def main():
         print(f"[{idx}/{len(combinations)}] {graph_type}/{graph_folder} + {problem_category}/{problem_name}")
         
         # Load graph and problem
-        graph_description = load_file(graph_filepath)
+        graph_content = load_file(graph_filepath)
+        graph_description = graph_format_to_description(graph_content)
         problem_description = load_file(problem_path)
         expected_matrix = load_adjacency_matrix_from_file(matrix_filepath)
         
@@ -482,7 +835,7 @@ def main():
             problem_description=problem_description,
         )
 
-        # print(prompt)
+        print(prompt)
         
         import subprocess
         

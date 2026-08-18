@@ -1,3 +1,0 @@
-A data engineering team is building an automated data pipeline to process daily financial transactions. The pipeline consists of multiple distinct scripts. The 'Extract' script must pull raw data before the 'Clean' script can run. The 'Clean' script must finish before the 'Aggregate' script calculates totals, which must finish before the 'Report' script emails the executives. 
-
-The job scheduler needs to take these strict dependencies and execute the scripts in a valid chronological order to ensure data flows smoothly without crashing due to missing inputs.

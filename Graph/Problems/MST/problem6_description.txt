@@ -1,5 +1,0 @@
-A global telecommunications consortium is planning to lay down a new network of deep-sea fiber-optic cables to connect several remote island nations to the global internet backbone. They have identified numerous possible cable routes along the ocean floor between different pairs of islands. 
-
-For each potential route, marine surveyors have calculated an installation cost based on depth, ocean currents, and seabed topography. The consortium wants to bring high-speed internet to every single island nation in the region. 
-
-Their budget is severely limited, so their primary goal is to link all the islands together into a single, cohesive network for the absolute lowest total cost. The final network must allow data to travel between any two islands in the system. To save money, they will not lay any redundant cables. The resulting network should form a structure with no closed loops, where removing any single cable would cause at least one island to lose its connection to the rest of the network.

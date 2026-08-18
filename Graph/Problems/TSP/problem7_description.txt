@@ -1,5 +1,0 @@
-Orbital Checkpoint Loop
-
-An autonomous probe must travel through a set of orbital checkpoints connected by weighted links. The network includes direct connections and indirect alternatives, and the total cost matters more than the appearance of any single edge.
-
-Each checkpoint must be visited exactly once, and the probe must return to its launch point after the last stop. The desired route is the minimum-cost closed loop through all checkpoints.

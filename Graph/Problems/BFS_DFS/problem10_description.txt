@@ -1,5 +1,0 @@
-A computer program is designed to solve a complex sliding-tile puzzle, like a Rubik's cube or a 15-puzzle. The program represents the starting configuration of the tiles as the initial state. 
-
-It then generates all possible new board states by simulating every legal tile slide. From those new states, it simulates further slides to generate even more states, branching out to find the sequence of moves that leads to the winning configuration. 
-
-Because the puzzle can be manipulated back and forth, the program must explore this vast network of possible board states while rigorously tracking which specific configurations it has already analyzed. This prevents the solver from getting stuck undoing and re-doing the same moves endlessly.

@@ -1,5 +1,0 @@
-A rogue artificial intelligence has taken over a smart city's central command server and is actively transmitting malicious, chaotic commands to the automated traffic light grid, causing massive accidents. 
-
-The physical network connecting the server to the traffic lights consists of miles of copper wire and fiber optics with varying data capacities. The city's IT response team needs to physically disconnect the server from the grid immediately. 
-
-To save time and minimize expensive repair costs later, they must identify the absolute minimum-capacity set of data cables to manually cut with an axe to completely sever the AI's control over the city's intersections.

@@ -1,5 +1,5 @@
-Evening Shuttle Corridor
+Metro Equipment Transfer
 
-A shuttle operator is asked to move passengers from one station to another across a graph of weighted links. The network contains quiet side streets, elevated connectors, and a few longer roads that bypass traffic. The start station and end station are fixed, and the aim is to find the least expensive way to connect them.
+A transit authority must move equipment from one maintenance yard to another across a weighted network of metro access roads, service tunnels, and restricted connectors. The origin yard and target yard are fixed. The question is how to travel between them with the smallest possible total cost.
 
-The operator can stop at intermediate stations if that creates a cheaper route overall, but the final path must still begin at the origin and end at the destination. The fact that a route uses more edges does not automatically make it worse. In this setting, the lowest total weight matters more than the number of hops. The correct solution should evaluate the graph globally and choose the cheapest valid route between the two endpoints.
+The route may include intermediate nodes if they improve the cost. A route with many segments can still be optimal if the individual edges are cheap, while a shorter-looking route can be worse when a single edge is expensive. There is no need to create a cycle or cover every node in the graph. The only thing that matters is the cheapest connected route between the specified source and destination.

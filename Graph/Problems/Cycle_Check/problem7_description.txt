@@ -1,7 +1,0 @@
-Operations Flow Inspection
-
-A logistics company has drawn a directed map of its operations from intake to packing to dispatch. Some steps have obvious forward arrows, but others have side links that can send work back to an earlier station if the configuration is not carefully checked. The supervisor wants to know whether the flow can ever return to a node already seen during the same chain.
-
-This is not a search for a best path or a shortest sequence. It is also not about counting all the steps in the process. The task is to detect whether the graph contains any directed closed loop at all. If there is a way to start at one node and follow the arrows until the same node is reached again, then the answer is positive.
-
-The network may appear orderly at first glance, but hidden back-links can make it cyclic. The result should therefore be a clear yes-or-no assessment of whether the directed graph has repetition in its structure.

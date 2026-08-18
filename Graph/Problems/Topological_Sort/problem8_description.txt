@@ -1,3 +1,0 @@
-A game designer is balancing the skill tree for a new role-playing game. Players earn experience points to unlock new abilities, but they cannot unlock advanced magic spells without first mastering the basic elemental spells. 
-
-The UI programmer needs to write a function that visually unlocks the skill tree nodes in the correct order as the player progresses. The function must analyze the prerequisite graph and ensure that an 'Ultimate' skill is never made available before its entire chain of base prerequisites has been sequentially satisfied.

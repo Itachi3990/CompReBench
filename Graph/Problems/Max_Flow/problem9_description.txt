@@ -1,3 +1,0 @@
-Biomedical engineers are designing a sophisticated artificial cardiovascular support system for a patient with severe heart failure. Artificial blood must be pumped from an external oxygenator to a specific failing organ through a complex, synthetic capillary network. 
-
-Each synthetic blood vessel has a specific maximum volumetric flow rate based on its diameter and material flexibility. To ensure the patient's survival, the engineers must mathematically prove the absolute maximum volume of oxygenated blood that can be delivered to the target organ per minute through the entire branching synthetic network.

@@ -1,7 +1,7 @@
-Event Logistics Crew Plan
+Service Desk Staffing
 
-An event planner has separated the available workers into one set and the required booths into another. The graph of possible assignments shows which workers can serve which booths based on certification, location, and shift availability. Each worker may be assigned to at most one booth, and each booth may receive at most one worker.
+A company’s help center is scheduling staff for several support desks. Staff members are listed on one side of the graph, and desks are listed on the other. A connection indicates that a staff member has the training required for that desk. Each staff member can be used once, and each desk can be filled by only one staff member.
 
-The planner is trying to maximize the number of valid assignments without violating the one-to-one restriction. A worker with many options should not be wasted on a poor choice if that would reduce the total number of successful pairings. The final result should be the largest feasible set of worker-booth matches allowed by the compatibility links.
+The goal is to fill as many desks as possible without breaking the compatibility rules. Some staff members are flexible and can cover many desks, while others are limited to one or two. The best allocation is the one that produces the maximum number of valid disjoint staff-desk pairings.
 
-The problem is about selecting compatible disjoint pairs from two groups, not about ordering nodes or walking through a network.
+The task is therefore to compute the largest feasible matching across the two groups using the available links.

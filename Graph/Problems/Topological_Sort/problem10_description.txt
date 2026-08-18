@@ -1,3 +1,0 @@
-A pharmaceutical company is outlining the clinical trial phases for a new drug. Phase 1 (safety) must be completed and approved before Phase 2 (efficacy) can begin. Animal testing must precede human trials, and FDA paperwork must be filed before any testing. 
-
-The project leads need to map out the multi-year development timeline. They must sequence the regulatory and scientific milestones chronologically, guaranteeing that the company follows a strict linear path and never accidentally skips a mandatory prerequisite phase in the drug's development cycle.

@@ -1,8 +1,0 @@
-Graph 6: an undirected simple sparse graph with 5 vertices named A, B, C, D, and E.
-
-Incident description:
-- A is incident to B, each with weight 1.
-- B is incident to A, C, and D, each with weight 1.
-- C is incident to B and E, each with weight 1.
-- D is incident to B, each with weight 1.
-- E is incident to C, each with weight 1.

@@ -1,5 +1,0 @@
-A computer vision algorithm is processing a complex medical MRI scan to automatically segment a dangerous tumor from healthy brain tissue. 
-
-The image is represented internally as a massive graph of pixels. The edges connecting adjacent pixels have 'weights' representing their similarity in color, texture, and intensity. 
-
-The algorithm needs to draw a definitive, closed boundary separating the 'tumor' pixels from the 'healthy' background pixels. It achieves this by finding the optimal cut through the pixel graph that severs the minimum total edge weight. This mathematical separation cleanly isolates the distinct regions along their most natural visual boundaries.

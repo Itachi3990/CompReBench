@@ -1,5 +1,5 @@
-Checkpoint Run
+Data Center Patrol Loop
 
-An autonomous vehicle is traveling through a network of checkpoints linked by weighted paths. The available paths are not all equally attractive: some are short, some are longer, and some only make sense when considered as part of the whole trip.
+A security unit must patrol a set of data centers linked by weighted corridors. Some corridors are short internal passages, while others are longer routes around restricted areas. The full patrol needs to be planned as one continuous circuit.
 
-The vehicle must pass through every checkpoint exactly once and finish at its starting checkpoint. Among all valid closed routes, the one with the smallest total travel cost is the correct choice.
+Each data center must be visited exactly once, and the patrol must end where it began. The best route is the cheapest closed loop that covers all data centers.

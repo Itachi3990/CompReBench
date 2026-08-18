@@ -1,5 +1,0 @@
-Factory Dispatch Chain
-
-A factory supervisor needs to send a critical component from one production wing to another across a graph of weighted conveyor links and maintenance corridors. Some links are direct but costly; others are indirect and surprisingly efficient. The origin wing and the destination wing are defined ahead of time.
-
-The supervisor does not need every node in the network, nor is there any requirement to form a loop. The only concern is the smallest possible total travel cost from the start to the finish. Intermediate nodes are permitted if they make the full route cheaper. The correct solution should identify the cheapest path through the weighted graph between the specified endpoints.

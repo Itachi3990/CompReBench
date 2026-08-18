@@ -1,5 +1,0 @@
-A new professional networking platform wants to implement a robust "Connections You Might Know" feature. When a user registers, the platform's backend algorithm starts with the user's immediate imported contacts. 
-
-It then explores the contacts of those contacts, expanding the social graph to find highly relevant mutual acquaintances. To prevent the algorithm from running endlessly and crashing the server due to people being mutual friends with each other, it must be carefully constrained. 
-
-The system must keep a strict memory log of which user profiles it has already analyzed. By doing so, it can systematically expand outward through the social connections, discovering the extended network without endlessly looping over the same profiles.

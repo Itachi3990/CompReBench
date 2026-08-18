@@ -1,5 +1,0 @@
-Campus Shuttle Loop
-
-A shuttle operator is planning a route through several campus stops connected by weighted roads and service paths. The route has to be judged as a whole, because a slightly longer sequence of stops can still be cheaper overall.
-
-Every stop must be visited exactly once, and the shuttle must return to the starting stop. The best answer is the minimum-cost closed loop across the campus network.

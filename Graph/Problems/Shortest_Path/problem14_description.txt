@@ -1,5 +1,0 @@
-Metro Equipment Transfer
-
-A transit authority must move equipment from one maintenance yard to another across a weighted network of metro access roads, service tunnels, and restricted connectors. The origin yard and target yard are fixed. The question is how to travel between them with the smallest possible total cost.
-
-The route may include intermediate nodes if they improve the cost. A route with many segments can still be optimal if the individual edges are cheap, while a shorter-looking route can be worse when a single edge is expensive. There is no need to create a cycle or cover every node in the graph. The only thing that matters is the cheapest connected route between the specified source and destination.

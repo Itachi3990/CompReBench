@@ -1,7 +1,0 @@
-Data Relay Safety Check
-
-A control room is evaluating a set of directed data relays used by several subsystems. Each arrow shows how a packet or command moves from one relay to another. The engineers need to know whether any path through the relays can eventually return to the relay where it started. If it can, the design contains a loop that may repeatedly recycle traffic.
-
-This is a pure existence check. There is no need to list every loop, measure its length, or find the most important node. The question is simply whether the directed graph contains a cycle anywhere in the network. Cross-links, branches, and longer chains are all allowed, but a single closed repetition changes the answer.
-
-The correct result should therefore be a yes-or-no judgment about whether the directed structure is acyclic or not.

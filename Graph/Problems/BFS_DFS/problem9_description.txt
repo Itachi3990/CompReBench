@@ -1,5 +1,0 @@
-A central server in a large local area network needs to broadcast a critical security configuration update to all other machines in the facility. 
-
-It sends the data packet to its immediate network switches. Those switches must then forward the packet to all of their connected neighbors, and so on, until the entire network receives the critical update. 
-
-To prevent a catastrophic "broadcast storm"—where redundant switches endlessly bounce the exact same packet back and forth, overwhelming the bandwidth—each switch must maintain a cache of recently seen packets. By dropping duplicates and only forwarding unvisited data, the network systematically floods the update to all reachable nodes safely.

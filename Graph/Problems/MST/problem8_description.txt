@@ -1,5 +1,0 @@
-A rapidly expanding metropolis is designing a new underground subway system to connect multiple key neighborhoods. The city planners have drawn up a large map of potential tunneling routes between various proposed stations. 
-
-Each potential route has a different estimated excavation cost due to variations in underground geology, existing infrastructure, and distance. The mayor has mandated that the new subway system must be completely integrated, meaning a passenger should be able to travel from any station to any other station using the network. 
-
-However, the city is facing a severe budget deficit. Therefore, the planners must select a set of tunneling routes that connects all the stations while minimizing the total excavation cost. To keep costs down, the final design must not contain any redundant loops; it should be the most cost-effective continuous network possible that ensures full coverage.

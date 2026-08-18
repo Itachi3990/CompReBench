@@ -1,3 +1,0 @@
-An event planner is organizing a massive outdoor music festival. There are numerous logistical tasks that depend on each other. The stage must be erected before the sound equipment is installed, the security fencing must be up before the vendors can set up their tents, and the permits must be secured before any construction begins. 
-
-The planner needs a master checklist that orders every single task sequentially. This ensures the setup crew follows a logical chronological progression and no team is blocked by an unfinished prerequisite task.

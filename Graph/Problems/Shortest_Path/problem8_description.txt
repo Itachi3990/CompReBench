@@ -1,5 +1,0 @@
-Research Vessel Approach
-
-A research vessel is trying to reach a coastal platform from a central dock through a map of weighted navigation links. Some links are short but awkward to use, while others are longer and safer. The vessel’s crew is not asked to inspect the whole map. They only need the cheapest route from the starting dock to the target platform.
-
-The route may include intermediate waypoints whenever they reduce the overall cost. The total weight of the complete journey matters more than any single edge. Direct travel is not automatically best, and a longer sequence of cheaper links can easily be preferable. The task is therefore to identify the minimum-cost path between the two specified endpoints, not a global tour of the network.

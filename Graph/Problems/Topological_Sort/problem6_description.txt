@@ -1,3 +1,0 @@
-A Linux system administrator is using a package manager to install a complex web server environment. The server requires a specific database software, which in turn requires several core system libraries, which require specific security patches. 
-
-The package manager cannot simply install everything at once. It must calculate a valid, linear installation order. It needs to process the entire dependency tree and output a sequential list of installation commands that ensures every software package is installed only after its required dependencies are already present on the system.

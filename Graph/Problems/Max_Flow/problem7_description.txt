@@ -1,3 +1,0 @@
-A state electrical grid operator is managing power transmission during a peak winter freeze. Electricity must flow from a cluster of nuclear power plants to a major metropolitan city that is demanding record amounts of heating energy. 
-
-The power travels across a web of high-voltage transmission lines and regional substations. Every transmission line has a strict thermal limit, dictating the maximum megawatts it can carry before physically melting. The operators need to determine the absolute maximum amount of electricity that can be safely pushed through the grid to the city to prevent brownouts.

@@ -1,3 +1,0 @@
-City planners are analyzing the capacity of a downtown subway system during the peak morning rush hour. Commuters enter the system at a massive suburban transit hub and need to travel to the central financial district. 
-
-The subway network has multiple overlapping lines, transfer stations, and parallel tunnels. Each train line and station platform has a strict maximum physical capacity of passengers it can safely move per hour. The planners must mathematically calculate the absolute maximum number of commuters that can successfully flow through the entire subway system from the hub to the financial district every hour.

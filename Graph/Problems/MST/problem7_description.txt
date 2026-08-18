@@ -1,5 +1,0 @@
-A newly established colony on Mars consists of several distinct habitat domes spread across a large crater. To allow colonists to travel safely between domes without wearing heavy spacesuits, the engineering team plans to construct pressurized transit tubes. 
-
-They have surveyed various potential paths between the domes, with each path having a specific construction cost dependent on distance and Martian terrain obstacles like boulders or loose regolith. The colony commander requires that every habitat dome be connected to the same pressurized transit system so that a colonist can theoretically walk from any one dome to any other dome. 
-
-Because construction materials are scarce and must be imported from Earth, the engineers must find the cheapest possible combination of transit tubes that connects all the domes together. To conserve precious materials, no unnecessary tubes should be built—the final layout must have no closed loops or redundant pathways.

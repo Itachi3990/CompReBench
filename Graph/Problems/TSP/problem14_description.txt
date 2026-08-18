@@ -1,5 +1,0 @@
-Festival Grounds Circuit
-
-A supply planner is designing a route across several festival grounds connected by weighted roads. The grounds include gates, vendor areas, and service corridors, and each connection has a different travel cost.
-
-Every location must appear exactly once in the route, and the vehicle must return to the starting point when the loop is complete. The answer should be the minimum-cost closed circuit through the whole set.

@@ -1,5 +1,0 @@
-Desert Supply Line
-
-A relief planner is organizing a supply run across a sparse network of desert outposts connected by weighted tracks and maintenance roads. Distances vary sharply: some segments are short but risky, others are safer but longer, and a few are dead ends for this particular trip. The planner already knows the origin and the target outpost.
-
-The route may bend through intermediate outposts if that reduces the total travel cost. There is no need to traverse the entire network, and the route does not have to return to the start. The goal is to determine the least costly valid way to travel from one chosen node to another through the given weighted connections.

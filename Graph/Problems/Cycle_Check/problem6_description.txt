@@ -1,7 +1,0 @@
-Pipeline Repetition Test
-
-An engineering team is reviewing a directed pipeline of sensors, processors, and relay nodes. Each directed edge means the signal or job flows from one component to another. The worry is that one branch of the pipeline might ultimately point back into an earlier component, producing a repetitive loop that prevents clean completion.
-
-The team does not need every possible route through the system. It does not matter which node is first in any ordering, and it does not matter how long a chain is if it never comes back. The only question is whether the directed graph contains a loop somewhere. A single hidden repetition is enough to make the answer positive.
-
-The requested result should be a structural determination about the presence or absence of a cycle in the directed network, not a traversal plan or a count of how many branches exist.

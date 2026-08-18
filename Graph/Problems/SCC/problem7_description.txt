@@ -1,5 +1,0 @@
-A university ethics board is analyzing a database of thousands of published research papers to ensure academic integrity. Papers cite older papers, forming a strict directed relationship of academic influence and credit. 
-
-The board is looking for highly unethical "citation cartels"—groups of researchers who coordinate to artificially boost each other's metrics and h-indexes. 
-
-They need an automated analysis tool to identify hidden, maximal clusters of papers within the database. Specifically, they want to find groups where, through long and complex chains of mutual citations, every paper in the identified group is eventually cited by every other paper in the group, proving a closed-loop echo chamber of fake academic prestige.

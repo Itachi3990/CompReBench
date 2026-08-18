@@ -1,7 +1,0 @@
-Network Configuration Audit
-
-A network administrator has recorded device dependencies as a directed graph. Some devices pass control or data to others, and some of those relationships may loop back through multiple intermediaries. The administrator wants to know whether the configuration contains a directed repetition that could cause a chain of updates to revisit a prior device.
-
-The task is not to build an ordering, not to calculate distance, and not to solve a routing problem. The only question is whether the directed graph includes at least one cycle. A chain that ends without returning is acceptable. A chain that comes back to an earlier device is not.
-
-The output should therefore state whether the graph has a loop hidden anywhere in its arrows.

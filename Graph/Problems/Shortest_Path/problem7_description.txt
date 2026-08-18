@@ -1,5 +1,0 @@
-Airport Cargo Link
-
-An airport logistics desk is planning a transfer from one cargo terminal to another across a weighted graph of service roads and perimeter lanes. Some edges represent short internal passes, others represent longer routes that avoid congestion or security checkpoints. The dispatcher has already fixed the origin terminal and the receiving terminal. The question is how to move between them as cheaply as possible.
-
-The transfer can pass through any number of intermediate terminals if they help lower the total cost, but the problem is still just a point-to-point cost comparison. There is no need to touch every node in the network, and no need to end where the transfer began. The right answer should identify the least expensive travel sequence from the source node to the destination node using the weighted connections provided.

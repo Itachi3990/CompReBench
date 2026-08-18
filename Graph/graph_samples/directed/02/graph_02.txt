@@ -1,7 +1,6 @@
-Graph 1: a directed simple graph with 4 vertices named A through D.
-
-Incident description:
-- A has outgoing edges to B and C, each with weight 7.
-- B has an outgoing edge to C, each with weight 3.
-- C has no outgoing edges.
-- D has an outgoing edge to C, each with weight 1.
+DIRECTED
+4 4
+A B 7
+A C 7
+B C 3
+D C 1

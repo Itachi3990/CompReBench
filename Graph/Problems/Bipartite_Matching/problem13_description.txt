@@ -1,7 +1,0 @@
-Research Intern Allocation
-
-A lab director is assigning interns to projects. Interns appear on one side of the compatibility board, and projects appear on the other. A line means an intern can contribute to that project. Each intern can be placed on at most one project, and each project can take at most one intern for this simplified case.
-
-The director wants the largest possible set of valid intern-project assignments. Because some interns have very few acceptable projects, the selection has to be careful. A locally reasonable match can be bad if it prevents a more constrained intern from being placed later. The final answer should maximize the number of one-to-one assignments overall.
-
-This is a compatibility pairing problem between two distinct sets, with the goal of maximum disjoint matching.

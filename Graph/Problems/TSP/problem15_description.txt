@@ -1,5 +1,0 @@
-Data Center Patrol Loop
-
-A security unit must patrol a set of data centers linked by weighted corridors. Some corridors are short internal passages, while others are longer routes around restricted areas. The full patrol needs to be planned as one continuous circuit.
-
-Each data center must be visited exactly once, and the patrol must end where it began. The best route is the cheapest closed loop that covers all data centers.
