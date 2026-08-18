@@ -1,0 +1,5 @@
+A global manufacturing conglomerate tracks the flow of specialized components between its hundreds of factories. Factory A might ship parts to Factory B, which then uses those parts to build a module shipped to Factory C. 
+
+The logistics team wants to identify potential vulnerabilities in this directed flow of materials. They are particularly worried about systemic bottlenecks that could halt global production. 
+
+They need an algorithm to find specific clusters of factories that are completely mutually dependent. This means they are searching for maximal sets of factories where, through a convoluted chain of shipments, every factory in the cluster ultimately relies on parts originating from every other factory in that cluster, creating a dangerous closed loop of dependency.

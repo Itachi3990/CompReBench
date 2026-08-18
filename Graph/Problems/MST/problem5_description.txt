@@ -1,0 +1,5 @@
+An archipelago nation wants to stimulate its regional economy by building a series of bridges to connect its scattered islands. Geologists and engineers have evaluated all feasible bridge placements between pairs of islands and determined the financial cost of building each one, factoring in water depth and distance. 
+
+The national government wants to ensure that citizens can travel by land to any island in the archipelago, fostering trade, tourism, and unity. Since bridge construction is an extraordinarily expensive endeavor, the government must find the absolute least expensive combination of bridges that successfully links every single island together into a single road network. 
+
+Any bridge that creates a closed loop and isn't strictly necessary for full island-to-island access will be discarded from the construction plans. The solution must provide a comprehensive, fully connected bridge network that minimizes the total capital investment.

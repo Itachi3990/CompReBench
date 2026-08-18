@@ -1,0 +1,5 @@
+A state power grid is experiencing a catastrophic cascading failure originating from a massive nuclear plant meltdown. The operators need to quickly and intentionally initiate rolling blackouts to isolate the failing plant and prevent the unstable frequency from dragging down the entire healthy regional grid. 
+
+The power lines connecting the plant to the wider grid have highly varied voltage capacities. 
+
+The operators must identify the absolute minimum-capacity set of transmission lines to intentionally trip and sever. By finding this optimal electrical boundary, they can completely disconnect the failing plant from the rest of the grid while minimizing the total number of healthy homes that lose power in the process.

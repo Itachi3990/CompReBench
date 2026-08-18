@@ -1,0 +1,5 @@
+A transportation department is tasked with designing a new highway system to connect a group of historically isolated towns. Engineers have mapped out several potential highway segments between different pairs of towns, with each segment having a carefully calculated construction cost based on length and terrain difficulty. 
+
+The state mandate requires that it must be possible to drive from any town to any other town using the newly constructed highway system. However, state funding is severely limited, so the department must select a subset of these potential segments that minimizes the overall cost of the entire project. 
+
+The final design should ensure full connectivity across all towns without creating any unnecessary alternative routes that would inflate the budget. If removing a planned highway segment still leaves all towns connected, that segment is considered an unnecessary expense and should be excluded from the final plan.

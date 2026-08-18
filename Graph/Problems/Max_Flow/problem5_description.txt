@@ -1,0 +1,3 @@
+A global logistics company is moving millions of consumer packages from a central manufacturing hub in Asia to a primary distribution warehouse in Europe. The goods are shipped via a complex network of cargo ships, freight trains, and long-haul trucks, passing through numerous intermediate sorting facilities. 
+
+Each transport leg (e.g., a specific shipping lane or train route) has a maximum tonnage capacity it can haul per week. The supply chain directors must determine the absolute maximum total tonnage they can continuously push through this multi-modal network from origin to destination without causing a backlog at any facility.

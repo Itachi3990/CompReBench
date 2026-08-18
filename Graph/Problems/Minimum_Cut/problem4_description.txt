@@ -1,0 +1,5 @@
+An international telecom company is assessing the physical vulnerability of its primary fiber-optic backbone connecting New York and London. The network consists of numerous overlapping undersea cables and coastal landing stations. 
+
+A hostile actor wants to completely sever communications between the two major financial hubs. 
+
+To proactively defend against this, the telecom engineers need to identify the weakest link in their infrastructure. They must calculate the specific, minimum-capacity set of undersea cables whose simultaneous destruction would completely disconnect the two cities. Identifying this precise bottleneck allows the company to focus their security and reinforcement budgets on those specific critical points.

@@ -1,0 +1,3 @@
+A municipal water authority needs to optimize the water distribution network during a severe summer drought. Water is pumped from a primary reservoir to a large residential sector through a complex, branching network of underground pipes. 
+
+Each segment of pipe has a strictly defined maximum capacity of gallons it can carry per hour based on its diameter and age. The engineers need an algorithm to determine the absolute maximum volume of water that can be pushed through the entire network from the reservoir to the residential area simultaneously, without bursting any of the intermediate pipes due to over-pressurization.

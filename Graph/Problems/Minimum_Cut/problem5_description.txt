@@ -1,0 +1,5 @@
+Police are setting up a quarantine zone around a neighborhood where a highly contagious, airborne virus has been detected. People can travel between the infected neighborhood and the safe downtown area through a complex network of streets, back alleys, and subway lines, each capable of handling a different volume of foot traffic. 
+
+The police department has a strictly limited number of officers and concrete barricades available to man checkpoints. 
+
+They must mathematically analyze the city grid to identify the exact, minimum-capacity set of transit routes to barricade. Finding this optimal chokepoint allows them to completely isolate the infected neighborhood from the safe zone using the fewest possible resources.

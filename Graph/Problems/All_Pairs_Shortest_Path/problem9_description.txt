@@ -1,0 +1,5 @@
+A high-frequency trading firm operates in a global decentralized cryptocurrency market. There are hundreds of liquidity pools allowing direct trades between specific pairs of tokens, each with its own exchange rate and slippage fee. 
+
+The firm wants to build an automated arbitrage detection system. To do this effectively, the system needs to constantly update a massive matrix of trade routes. 
+
+It must rapidly calculate the optimal, highest-yield conversion path between every single pair of tokens in the entire market. Because the most profitable trade often involves exchanging through three or four intermediate currencies, the system needs to know the mathematical "shortest path" for maximum profit between all possible token pairs at any given moment.

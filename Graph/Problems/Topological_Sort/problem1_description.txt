@@ -1,0 +1,3 @@
+A university computer science department offers dozens of courses, many of which have strict prerequisites. For example, a student must pass 'Intro to Programming' before taking 'Data Structures', and 'Data Structures' must be completed before 'Algorithms'. 
+
+An academic advisor needs to create a valid graduation plan for an incoming freshman. They need an algorithm to process the entire prerequisite chart and output a valid, linear sequence of courses. This chronological list ensures the student follows a logical progression and never attempts a class before completing its required foundations.

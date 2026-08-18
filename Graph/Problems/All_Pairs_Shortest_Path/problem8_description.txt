@@ -1,0 +1,5 @@
+A video game developer is creating a vast, static open-world map with hundreds of distinct towns, forts, and landmarks. The game features hundreds of AI-controlled merchant caravans that constantly travel between these points. 
+
+To save real-time CPU processing power, the developers do not want the game engine to calculate optimal paths dynamically while the player is exploring. 
+
+Instead, during the game's initial loading screen, the engine must pre-compute the shortest travel distance between every possible pair of landmarks. This data will be stored in a quick-reference lookup table in the computer's memory, allowing any AI caravan to instantly know the most efficient route to its destination regardless of where it starts.

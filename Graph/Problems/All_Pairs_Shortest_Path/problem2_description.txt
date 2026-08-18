@@ -1,0 +1,5 @@
+A major Internet Service Provider operates a backbone network of hundreds of core optical routers. Each fiber-optic link between routers has a measured latency in milliseconds. 
+
+To ensure data packets are routed as efficiently as possible, the network engineers need to populate the routing tables of every single router in the network. Instead of calculating paths dynamically every time a packet arrives, they want to run a centralized offline process. 
+
+This process must determine the lowest-latency path between every single pair of routers in the entire network. By pre-calculating the shortest path from every source router to every destination router, the ISP can ensure that hardware can make instantaneous, optimal forwarding decisions for all network traffic.

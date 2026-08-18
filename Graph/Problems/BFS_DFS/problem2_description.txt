@@ -1,0 +1,5 @@
+Public health officials are responding to a highly contagious viral outbreak. They have identified "Patient Zero" and need to map the potential spread of the disease through the community. 
+
+Starting from this initial patient, they must track all known direct contacts, then investigate the contacts of those contacts, and so on. The goal is to systematically discover the entire cluster of exposed individuals. 
+
+The tracing database must flag each person once they have been investigated to avoid redundant interviews. This rigorous tracking ensures that every reachable person in the exposure network is successfully identified and quarantined without the investigators accidentally working in circles.

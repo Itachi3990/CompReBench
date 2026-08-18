@@ -1,0 +1,3 @@
+The baggage handling system at a massive international airport is being stress-tested before the holiday season. Luggage is injected into the system at the main check-in counters and must flow through a chaotic maze of conveyor belts, security scanners, and automated sorting junctions to reach the final airplane cargo loading bays. 
+
+Each conveyor belt has a maximum limit on the number of bags it can move per minute without jamming. Engineers need to calculate the maximum throughput—the absolute highest number of bags per minute that the entire interconnected system can successfully process from check-in to the planes.

@@ -1,0 +1,5 @@
+A company is developing a massive new ski resort spread across several mountain peaks. To transport skiers, they need to install a network of aerial chairlifts connecting various base camps and mountain summits. 
+
+Surveyors have plotted out numerous potential chairlift lines between these locations, each with a specific installation cost dictated by elevation gain, wind exposure, and distance. The resort management wants to guarantee that a skier can reach any location in the resort from any other location by taking a sequence of chairlifts. 
+
+Because chairlift towers and heavy steel cables are very expensive, the company wants to connect all locations for the minimum total installation cost. They do not want to build any redundant chairlift lines; if a location can already be reached through the network, no additional lines should be built that would create a circular route.

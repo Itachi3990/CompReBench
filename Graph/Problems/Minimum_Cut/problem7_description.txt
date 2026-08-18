@@ -1,0 +1,5 @@
+A bomb disposal technician is examining a highly complex, improvised explosive device. The device has a primary power source (a battery pack) and a detonator (the explosive charge), which are connected by a tangled, chaotic web of dozens of colored wires of varying thicknesses. 
+
+Cutting every single wire would take too long, and intelligence suggests some wires are booby-trapped to explode if cut unnecessarily. 
+
+The technician's diagnostic scanner needs to mathematically analyze the circuit diagram and identify the absolute minimum set of wires to snip. Finding this exact electrical bottleneck allows the technician to completely sever the connection between the battery and the detonator with the least possible risk.

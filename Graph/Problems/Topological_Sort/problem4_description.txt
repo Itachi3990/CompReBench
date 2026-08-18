@@ -1,0 +1,3 @@
+A head chef is preparing a wildly complex, multi-course banquet. The recipe involves dozens of individual tasks: marinating meat, chopping vegetables, creating sauces, baking bread, and plating. Many tasks have strict dependencies: the dough must rise before it is baked, and the sauce must be reduced before it is poured over the meat. 
+
+To manage the kitchen staff efficiently, the chef needs to lay out a master timeline. They must order all the tasks chronologically so that no cook is ever waiting on a step that hasn't been started, ensuring a smooth, linear workflow.

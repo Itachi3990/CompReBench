@@ -1,0 +1,5 @@
+An antitrust regulatory agency is investigating the complex, opaque ownership structures of multinational corporations. Companies frequently buy controlling shares in other companies, creating a strictly directed chain of ownership and financial influence. 
+
+To identify monopolies and hidden corporate cartels, the agency needs to look beyond direct parent-subsidiary relationships. They are searching for "mutually owning clusters." 
+
+Their data scientists must analyze the global web of stock ownership to find maximal groups of corporations where, through a convoluted web of subsidiary ownerships, holding companies, and joint ventures, every corporation in the group effectively has an indirect ownership stake in every other corporation in the group, forming an unbreakable corporate shield.

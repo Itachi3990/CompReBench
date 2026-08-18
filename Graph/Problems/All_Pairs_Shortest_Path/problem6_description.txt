@@ -1,0 +1,5 @@
+A city's emergency management agency wants to overhaul its rapid-response dispatch software. The city is divided into hundreds of distinct zones, with the roads connecting them having highly varied travel times due to speed limits, stoplights, and historical traffic data. 
+
+To instantly identify the optimal dispatch strategy during city-wide crises involving multiple incidents, the software needs a pre-calculated distance matrix loaded into its memory. 
+
+This matrix must dictate the absolute fastest driving time between every single pair of zones in the city. Rather than finding a single route for a single ambulance, the agency needs to know the shortest path between all possible origins and all possible destinations simultaneously to allow for immediate, network-wide response coordination.

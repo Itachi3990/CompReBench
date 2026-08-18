@@ -1,0 +1,5 @@
+A national courier company operates dozens of sorting hubs across the country. Trucks constantly travel between these hubs, with each route having a specific fuel cost and toll fee. 
+
+To instantly calculate the cheapest shipping rate for customers dropping off packages at any hub destined for any other hub, the company wants to build a master lookup table. This table must contain the absolute minimum cost to move a package between every possible pair of hubs in the network. 
+
+Because trucks often take indirect routes to save money, the system must account for multi-hop journeys through intermediate hubs. The goal is to compute the lowest-cost path between all hub pairs simultaneously so that any shipping query can be answered immediately without running complex route calculations on the fly.

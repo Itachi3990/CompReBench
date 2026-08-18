@@ -1,0 +1,5 @@
+A massive theme park with dozens of distinct attractions, restaurants, and rest areas is launching a new interactive map application for its guests. The winding pathways between locations have different walking times based on distance and expected crowd congestion. 
+
+To ensure the app can instantly provide directions and estimated travel times from a guest's current location to any other point of interest, the developers cannot rely on computing routes on the guest's phone. 
+
+Instead, they need to pre-compute the minimum walking time between every single pair of locations in the entire park. By building this comprehensive matrix of shortest travel times, the app can immediately look up the optimal path and duration for any two locations a guest might select.

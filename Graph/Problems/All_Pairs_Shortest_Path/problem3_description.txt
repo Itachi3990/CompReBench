@@ -1,0 +1,5 @@
+A commercial airline serves over a hundred airports worldwide. A direct flight between two airports has a specific ticket price, but sometimes it is much cheaper for a passenger to book a multi-leg journey with layovers. 
+
+The airline is building a new consumer-facing booking engine. To provide the fastest user experience, they want to pre-calculate the absolute cheapest itinerary between every possible combination of departure and destination airports they service. 
+
+This master matrix of minimum ticket prices will allow the booking engine to instantly display the best deals to users. The algorithm must evaluate all possible multi-stop routes to find the lowest possible cost for travel between all pairs of airports in their flight network.

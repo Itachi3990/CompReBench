@@ -1,0 +1,3 @@
+A multinational energy corporation operates a massive oil pipeline network. Crude oil must be transported from a remote, high-yield extraction field to a major coastal port facility for global export. 
+
+The oil travels through a web of intersecting pipelines, pumping stations, and intermediary storage tanks. Each section of pipe has a distinct flow rate limit dictated by its pressure tolerance. The logistics team needs to mathematically determine the highest possible total volume of oil that can flow continuously from the extraction field to the port every single day.

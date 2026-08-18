@@ -1,0 +1,5 @@
+A software application's memory manager needs to free up RAM that is no longer being actively used by the program. The "garbage collector" algorithm starts its routine by looking at a set of 'root' memory pointers currently active in the program's execution stack. 
+
+It must then follow all memory references from those roots to other data objects, and references from those objects to further objects. 
+
+By systematically tracing and explicitly marking every 'reachable' object in memory, the program maps out all the data that is still needed. Once the rigorous tracing process is complete, the program can safely delete any unmarked objects, reclaiming wasted space while avoiding infinite loops caused by circular data references.

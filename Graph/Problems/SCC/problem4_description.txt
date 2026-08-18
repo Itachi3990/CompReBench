@@ -1,0 +1,5 @@
+A large tech firm maintains a monolithic codebase with thousands of distinct software modules. Modules frequently import and depend on other modules, creating a massive directed graph of software dependencies. 
+
+To refactor the code into microservices and improve compile times, the software architects must identify "circular dependency traps." A simple A imports B, and B imports A is easy to find, but complex webs of dependencies are hidden throughout the code.
+
+They need to mathematically partition the codebase to find maximal groups of modules that all mutually depend on each other through long, overlapping chains of imports. Identifying these tightly bound clusters is the first step to breaking the cycles and untangling the monolithic application.

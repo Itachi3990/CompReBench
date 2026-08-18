@@ -1,0 +1,5 @@
+A cloud storage provider is running a routine backup and integrity audit on a massive, highly nested file directory for an enterprise client. 
+
+The software starts at the root folder and needs to verify the metadata of every single subfolder and file within the user's storage drive. The exploration program must systematically open folders, read the contents, and recursively dive deeper into the directory tree. 
+
+To ensure the entire nested structure is fully indexed, the software maintains a checklist of processed directories. This guarantees that it systematically unwraps the entire folder structure, reaching the deepest hidden files without missing anything or scanning the same folder twice.

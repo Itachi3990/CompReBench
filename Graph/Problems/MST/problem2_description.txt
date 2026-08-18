@@ -1,0 +1,5 @@
+A government initiative aims to bring electricity to a collection of remote rural villages. The power grid must be expanded by laying high-voltage cables between these villages. Surveyors have provided the cost of laying cables between various pairs of villages, taking into account geographical obstacles like mountains and rivers. 
+
+The project has a strict budget, so the overarching goal is to connect all the villages to the same electrical grid for the absolute minimum total cost. Every village must be incorporated into this unified power network.
+
+To maximize efficiency and minimize material waste, the final layout should not contain any loops or redundant pathways. While every village must be reachable from any other, there should be exactly one unique path of cables between any given pair of villages. The solution should identify the cheapest combination of cable routes that meets these connectivity requirements.

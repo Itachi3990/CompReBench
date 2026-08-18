@@ -1,0 +1,5 @@
+A military strategist is planning a siege against an enemy fortress. The fortress receives vital supplies from a central manufacturing city through a complex network of dirt roads, rivers, and mountain passes, each with a different carrying capacity for cargo. 
+
+The strategist wants to completely starve the fortress of supplies. To minimize the expenditure of expensive explosive ordinance and risk to troops, they need an algorithm to identify the exact 'chokepoint' of this network. 
+
+They must find the specific combination of supply routes that, if destroyed, would completely sever the connection between the city and the fortress while requiring the absolute minimum total effort to destroy.

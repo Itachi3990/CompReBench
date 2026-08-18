@@ -1,0 +1,5 @@
+A city planner is analyzing the downtown road network, which consists entirely of narrow, one-way streets. Because of ongoing construction and emergency road closures, the normal flow of traffic has been severely disrupted. 
+
+The planner wants to evaluate the resilience of the current road configuration and find specific "navigable zones" within the downtown area where a driver won't get permanently stuck. 
+
+They need an algorithm to process the current map and identify maximal sets of intersections where it is entirely possible to drive from any intersection in the set to any other intersection in that same set. Discovering these mutually reachable zones helps the city deploy traffic cops to the exact boundaries where drivers might get trapped.

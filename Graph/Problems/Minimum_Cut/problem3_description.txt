@@ -1,0 +1,5 @@
+A civil engineering team is designing emergency flood controls for a valley town located below a massive, aging reservoir. If the dam bursts, the water will flow downwards through a network of natural river channels, spillways, and canals, each with a specific maximum volume capacity. 
+
+The town's emergency budget for building rapid-deployment dams is severely limited. 
+
+The engineers must mathematically analyze the waterway network to determine the absolute minimum set of channels they need to dam up. They must find the cheapest combination of barricades that will completely prevent any floodwater from reaching the town, effectively severing the town's connection to the reservoir.

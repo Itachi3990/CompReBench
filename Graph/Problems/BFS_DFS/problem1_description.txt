@@ -1,0 +1,5 @@
+A new search engine is indexing a massive corporate intranet. Starting from the central homepage, the automated web crawler needs to follow every hyperlink to discover all internal documents, employee profiles, and department portals. 
+
+To ensure the crawler maps the entire intranet efficiently without getting stuck in infinite loops between pages that link back to each other, the algorithm must meticulously record every URL it has already processed. 
+
+By systematically expanding its search frontier and marking pages as "visited," the crawler ensures it thoroughly explores the interconnected web of documents, eventually finding every single reachable page without endlessly re-processing the same content.

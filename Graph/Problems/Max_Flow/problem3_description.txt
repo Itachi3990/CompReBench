@@ -1,0 +1,3 @@
+Emergency management officials are planning a mass evacuation of a coastal city ahead of a category 5 hurricane. Citizens must drive from the downtown commercial center to a designated safe zone further inland. 
+
+The road network consists of various highways, bridges, and local streets. Every road segment is capable of handling a specific maximum number of vehicles per hour before traffic grinds to a complete halt. The officials must calculate the absolute maximum throughput of vehicles that can be safely evacuated per hour by fully utilizing the entire available road network simultaneously.

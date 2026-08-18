@@ -1,0 +1,5 @@
+A game studio is developing a complex dungeon crawler with hundreds of rooms connected by one-way drop-offs, teleporters, and magical sliding doors that lock behind the player. 
+
+Before finalizing the level design and shipping the game, the quality assurance team needs to ensure players don't get permanently trapped in a dead-end section of the dungeon. 
+
+They want an automated map analysis tool to segment the dungeon layout into distinct "safe zones." The tool must process the directional connections and identify maximal clusters of rooms where a player can freely travel from any room to any other room within that specific cluster, ensuring they can completely explore that zone without fear of a soft-lock.

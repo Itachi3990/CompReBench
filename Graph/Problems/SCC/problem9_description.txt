@@ -1,0 +1,5 @@
+Neuroscientists are meticulously mapping the synaptic connections within a specific region of a fruit fly's brain. Neurons fire electrical signals to other neurons in a strictly one-way direction across their synapses. 
+
+To understand how the fly's brain maintains short-term memory and processes rhythmic behaviors, the researchers are looking for "recurrent circuits" within the massive biological wiring diagram. 
+
+They need a computational model to identify specific, maximal clusters of neurons that form closed feedback loops. By finding these tightly connected groups where an electrical signal originating from any neuron in the cluster can eventually propagate back to every other neuron in that same cluster, the scientists can isolate the brain's internal memory engines.

@@ -1,0 +1,5 @@
+A search engine company is analyzing the hyperlink structure of a vast segment of the internet. Pages link to other pages, but these links are strictly one-way. 
+
+To better understand echo chambers and closely-knit online communities, the researchers want to segment the internet into distinct functional groups. They need an automated tool to process billions of pages and identify isolated groups of websites. 
+
+Specifically, they are looking for maximal clusters where every single page in the group can eventually reach every other page in that same group by following a sequence of hyperlinks. Finding these mutually reachable clusters will reveal deeply interconnected digital subcultures that share traffic exclusively among themselves.

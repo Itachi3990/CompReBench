@@ -1,0 +1,5 @@
+A university campus is upgrading its IT infrastructure and needs to link together the servers in several different departmental buildings. The buildings can be connected via underground fiber-optic cables, and the cost of laying a cable between any two buildings varies depending on the distance and existing underground utilities. 
+
+The IT administration requires that all departmental servers be able to communicate with each other on a single, unified campus network. To save on infrastructure costs, they want to find the cheapest set of cable connections that successfully links all the buildings together. 
+
+Redundant connections that do not contribute to the overall connectivity of the network should be avoided to minimize expenses. The optimal network design will span across all departmental buildings, ensuring full communication capabilities while keeping the total installation cost to an absolute minimum.

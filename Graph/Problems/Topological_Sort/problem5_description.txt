@@ -1,0 +1,3 @@
+A general contractor is planning the construction of a large commercial skyscraper. The project involves hundreds of specialized teams. The foundation must be poured before the steel framing can begin, the framing must be done before the drywall, and the plumbing must be roughed-in before the walls are sealed. 
+
+The project manager must create a linear Gantt chart for the entire year. They need to sequence every single construction phase chronologically so that no subcontractor arrives on site before the prerequisite work for their specific job is completely finished.

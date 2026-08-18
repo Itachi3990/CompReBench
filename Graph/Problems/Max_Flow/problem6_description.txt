@@ -1,0 +1,3 @@
+A national railway company is optimizing its freight network to transport massive quantities of coal. The coal originates at a vast mining complex and needs to be delivered to a central power plant. 
+
+The rail network consists of many interlocking tracks, switching yards, and junctions. Each specific track segment has a strict safety limit on how many heavy freight trains it can physically support per day. The railway planners need to calculate the theoretical maximum number of coal trains that can be actively routed from the mine to the power plant daily utilizing all available tracks.

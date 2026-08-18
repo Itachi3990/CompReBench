@@ -1,0 +1,5 @@
+A massive agricultural cooperative is overhauling its water distribution system across dozens of large farms in a dry valley. The cooperative needs to dig a network of irrigation canals to distribute water from a central reservoir to every single farm. 
+
+Engineers have evaluated all feasible canal paths between the farms and calculated the excavation cost for each based on elevation changes and soil hardness. The cooperative's board has decided that all farms must be connected to the same canal network so that water can flow throughout the entire valley. 
+
+Due to a recent drop in crop prices, funding is extremely tight, so the objective is to build the required network for the lowest total cost. The final system should ensure every farm is reached, but it should not include any extra canals that form loops, as this would waste valuable excavation funds and complicate water flow management.

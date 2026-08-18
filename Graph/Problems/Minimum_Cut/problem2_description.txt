@@ -1,0 +1,5 @@
+A cybersecurity defense team is responding to a massive data exfiltration attack. A highly sensitive internal database is actively being siphoned off to a rogue external server. The data is flowing through a complex internal network of routers, switches, and firewalls. 
+
+The team cannot simply pull the plug on the database or disconnect the entire building from the internet, as that would halt all business operations. 
+
+Instead, they need to find the specific, minimum-capacity set of internal network cables or logical firewall links to sever. By finding this exact bottleneck, they can completely cut off the flow of data to the rogue server while causing the least possible disruption to normal internal traffic.

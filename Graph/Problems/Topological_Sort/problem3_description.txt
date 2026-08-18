@@ -1,0 +1,3 @@
+A software development team is compiling a massive operating system from source code. The project contains hundreds of distinct software libraries and executable files. Many libraries depend on the pre-compilation of other, lower-level libraries. 
+
+If the compiler attempts to build a module before its dependencies are ready, the build will crash. The build system must analyze the dependency graph and determine a strict chronological order to compile the files, guaranteeing that every module is built only after its required libraries are fully compiled and available.

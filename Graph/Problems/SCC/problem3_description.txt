@@ -1,0 +1,5 @@
+Financial regulators are analyzing millions of wire transfers between shell companies in an offshore banking haven. Money moves in a directed fashion from one account to another, often passing through dozens of intermediaries. 
+
+To detect sophisticated money laundering syndicates, investigators are looking for "wash trading rings." They cannot simply look for two accounts trading back and forth; the criminals are much smarter than that. 
+
+They need software to analyze the entire transaction graph and identify hidden, maximal clusters of accounts. Within these clusters, money is constantly being transferred in complex, overlapping cycles, ensuring that every account in the cluster can eventually send money to every other account in the cluster through a series of untraceable wire transfers.

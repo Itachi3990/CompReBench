@@ -1,0 +1,5 @@
+Sociologists are studying how rumors and unverified information spread through a massive corporate office. They have mapped out a directed network of "who gossips to whom." Employee A might tell secrets to Employee B, but B might not trust A enough to reciprocate. 
+
+The researchers want to find the core "rumor mills" within the company to understand how misinformation survives debunking efforts. 
+
+They need to mathematically partition the social graph to identify tightly knit, maximal cliques of employees. Within these specific groups, a rumor started by any single person will eventually circulate through complex chains of workplace gossip to reach every other person in that group, creating a self-sustaining echo chamber of office politics.

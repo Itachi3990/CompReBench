@@ -1,0 +1,5 @@
+A regional water authority is planning to construct a new distribution network to supply fresh water to multiple distinct neighborhoods in a developing city. Various potential pipeline routes have been surveyed between pairs of neighborhoods, with each route having an estimated construction cost based on terrain and distance. 
+
+The authority's objective is to ensure that every neighborhood has access to the water supply while keeping the total construction cost as low as possible. The final network must be continuous, meaning water can reach any neighborhood from any other.
+
+However, to strictly control the budget, no redundant pipelines should be built. If a proposed pipeline route can be removed from the plan without isolating any neighborhood from the rest of the network, it should not be constructed. The goal is to find the exact set of pipeline connections that achieves full coverage for the minimum possible expenditure.

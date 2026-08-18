@@ -1,0 +1,5 @@
+A global manufacturing corporation operates raw material mines, processing plants, and distribution centers across several continents. The financial cost of shipping cargo between any two specific facilities via rail, sea, or air is known to their logistics division. 
+
+To optimize their global supply chain and run complex, instantaneous financial simulations, the corporate strategy team requires a massive, comprehensive dataset. 
+
+This dataset must list the absolute lowest possible shipping cost between every possible pair of facilities in their entire global network. By analyzing all possible routing combinations, including stopping at intermediate warehouses, the team needs to determine the minimum transport expense between all pairs of nodes to make rapid strategic decisions.

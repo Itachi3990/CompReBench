@@ -1,0 +1,3 @@
+An automotive manufacturing plant is designing a new assembly line for an electric vehicle. The car consists of thousands of parts that must be assembled in a specific order. The battery pack must be installed before the seats, and the chassis must be welded before the battery is inserted. 
+
+The factory engineers need to take this complex web of assembly dependencies and flatten it into a single, step-by-step sequential instruction manual for the robotic assembly arms. This strict chronological list guarantees that no manufacturing step is attempted before its physical prerequisites are met.

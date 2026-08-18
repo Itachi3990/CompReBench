@@ -1,0 +1,5 @@
+A severe lightning storm has caused a major short circuit at a central power substation, tripping several breakers. The city's automated electrical grid management system needs to instantly determine the exact scope of the resulting blackout. 
+
+Starting from the damaged substation, the diagnostic software must trace the network of power lines outward to all directly connected transformers, and from there to all downstream residential distribution nodes. 
+
+The system must methodically mark each affected node it discovers. By systematically following the physical grid connections and ignoring nodes it has already logged, the software can accurately map the entire region that has lost power originating from the initial fault.

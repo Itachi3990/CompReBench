@@ -1,0 +1,5 @@
+A powerful cartel is smuggling contraband from a hidden jungle production facility to a major coastal shipping port. The smugglers utilize a vast, intricate network of dirt roads, river boats, and hidden mountain trails, each with a strict limit on how much cargo they can move undetected daily. 
+
+The DEA wants to completely shut down this specific smuggling operation. They need to mathematically analyze the geographic network and identify the 'bottleneck.' 
+
+They are looking for the specific combination of routes that, if simultaneously raided and blocked, would completely sever the connection between the lab and the port using the absolute minimum amount of law enforcement manpower and resources.

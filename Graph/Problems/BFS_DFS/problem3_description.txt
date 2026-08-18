@@ -1,0 +1,5 @@
+An automated rescue drone has been deployed into a collapsed mining complex to search for trapped survivors. The mine consists of hundreds of intersecting tunnels, dead ends, and caverns. 
+
+Starting from the main entrance shaft, the drone must systematically navigate through the dark corridors, looking for life signs. To avoid flying in circles and wasting precious battery life, the drone's navigation software must maintain a precise digital map. 
+
+It must carefully mark each intersection and tunnel segment it has already explored as a "cleared zone." By only venturing down unvisited pathways, the drone guarantees it will eventually check every accessible area of the collapsed mine without redundant searching.
