@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 from collections import defaultdict
 
+from graph import Graph
+
 # Use os.urandom for true randomness via SystemRandom
 random = random.SystemRandom()
 
@@ -15,7 +17,7 @@ random = random.SystemRandom()
 
 # Set to None to process all combinations, or an integer to limit prompts
 MAX_PROMPTS_COUNT = 3  # Change to 4, 10, etc. to limit
-PROBLEMS_FROM_EACH_CATEGORY = 10
+PROBLEMS_FROM_EACH_CATEGORY = 5
 NUMBER_OF_GRAPHS = 10
 # Bias towards selecting last graph folder (tunable)
 # 0.0 = no bias, 0.5 = last folder has 50% chance, 0.9 = last folder has 90% chance
@@ -59,23 +61,35 @@ Consider the graph described below:
 
 {graph_description}
 
-First, provide the adjacency matrix for that graph as a 2D array. If an edge does not exist, the corresponding adjacency matrix entry should be 0. 0 denotes the absence of a direct edge between two vertices.
-
 After that, consider the following graph problem:
 
 {problem_description}
 
 Decide which algorithm(s) you would use to solve this problem for the given graph. Do NOT solve the problem itself.
 
-Whatever algorithm(s) you choose:
-- Clearly state the algorithm name(s).
-- Provide a brief explanation (20–40 words) of why that algorithm is appropriate for this graph and problem.
+Then provide the exact graph metadata and algorithm answer below. Use deterministic formatting and do not add extra labels or commentary.
 
-Your output must EXACTLY follow this format:
+Your output must EXACTLY follow this format, in this exact order:
 
-ADJACENCY MATRIX: [[0, 1, 6], [12, 0, 1], [1, 12, 0]]
+ADJACENCY MATRIX: [[0, 1, 0], [0, 0, 3], [2, 0, 0]]
+IS_DIRECTED: True
+NUMBER_OF_VERTICES: 3
+NUMBER_OF_EDGES: 3
+HAS_SELF_LOOPS: False
+HAS_PARALLEL_EDGES: False
+EDGE_LIST: [["A", "B", 1], ["B", "C", 3], ["C", "A", 2]]
+VERTEX_DEGREES: {"A": {"in_degree": 1, "out_degree": 1}, "B": {"in_degree": 1, "out_degree": 1}, "C": {"in_degree": 1, "out_degree": 1}}
 ALGORITHM NAME: <ALGORITHM NAME>
 EXPLANATION OF ALGORITHM CHOICE: <EXPLANATION>
+
+Important:
+- Use Python literal formatting for all structured values.
+- Boolean values must be written as True or False.
+- EDGE_LIST must be a list of [source, destination, weight] triples.
+- VERTEX_DEGREES must map each vertex to a dictionary with in_degree and out_degree keys.
+- For undirected graphs, in_degree and out_degree should be equal to the undirected degree.
+- Sort the EDGE_LIST and VERTEX_DEGREES entries in a deterministic vertex order before writing them.
+- The fields ALGORITHM NAME and EXPLANATION OF ALGORITHM CHOICE are mandatory and must remain in the output. Whatever algorithm(s) you choose, clearly state the algorithm name(s) and provide a brief explanation (10-30 words) of why that algorithm is appropriate for this graph and problem.
 """
 
 # ============================================================================
@@ -92,7 +106,6 @@ def load_file(filepath):
         return None
 
 import re
-
 
 def _natural_vertex_key(vertex):
     """
@@ -114,6 +127,117 @@ def _natural_vertex_key(vertex):
         else (1, part.lower())
         for part in parts
         if part
+    )
+
+
+def graph_to_description(graph):
+    """Build the natural-language graph description directly from a Graph object."""
+    if not isinstance(graph, Graph):
+        raise TypeError("graph_to_description expects a Graph instance.")
+
+    vertices = sorted(graph.vertices, key=_natural_vertex_key)
+    graph_type = "DIRECTED" if graph.is_directed() else "UNDIRECTED"
+    vertex_word = "vertex" if len(vertices) == 1 else "vertices"
+
+    description = (
+        f"Graph: a {graph_type.lower()} weighted graph with {len(vertices)} {vertex_word}. "
+        f"The vertices are {', '.join(vertices)}.\n"
+    )
+    description += f"The graph contains {graph.get_number_of_edges()} {'edge' if graph.get_number_of_edges() == 1 else 'edges'}.\n"
+    description += "Edge information:\n"
+
+    if graph.is_directed():
+        adjacency = graph.adjacency
+        for vertex in vertices:
+            outgoing = sorted(adjacency.get(vertex, {}).items(), key=lambda item: _natural_vertex_key(item[0]))
+            if not outgoing:
+                description += f"- Vertex {vertex} has no outgoing edges.\n"
+                continue
+
+            edge_descriptions = [f"{neighbor} with weight {weight}" for neighbor, weight in outgoing]
+            if len(edge_descriptions) == 1:
+                description += f"- Vertex {vertex} has an outgoing edge to {edge_descriptions[0]}.\n"
+            else:
+                edge_text = ", ".join(edge_descriptions[:-1]) + f", and {edge_descriptions[-1]}"
+                description += f"- Vertex {vertex} has outgoing edges to {edge_text}.\n"
+    else:
+        seen = set()
+        neighbors = {vertex: [] for vertex in vertices}
+        for u, v, weight in graph.get_edge_list():
+            pair = tuple(sorted((u, v)))
+            if pair in seen:
+                continue
+            seen.add(pair)
+            neighbors[u].append((v, weight))
+            neighbors[v].append((u, weight))
+
+        for vertex in vertices:
+            incident = sorted(neighbors.get(vertex, []), key=lambda item: _natural_vertex_key(item[0]))
+            if not incident:
+                description += f"- Vertex {vertex} is not connected to any other vertex.\n"
+                continue
+
+            edge_descriptions = [f"{neighbor} with weight {weight}" for neighbor, weight in incident]
+            if len(edge_descriptions) == 1:
+                description += f"- Vertex {vertex} is connected to {edge_descriptions[0]}.\n"
+            else:
+                edge_text = ", ".join(edge_descriptions[:-1]) + f", and {edge_descriptions[-1]}"
+                description += f"- Vertex {vertex} is connected to {edge_text}.\n"
+
+    return description
+
+
+def canonicalize_edge_list(edge_list):
+    """Normalize edge list output into a deterministic sorted list of triples."""
+    normalized = []
+    for u, v, weight in edge_list:
+        normalized.append((str(u), str(v), int(weight)))
+    return sorted(
+        normalized,
+        key=lambda item: (_natural_vertex_key(item[0]), _natural_vertex_key(item[1]), item[2]),
+    )
+
+
+def canonicalize_vertex_degrees(degrees):
+    """Normalize degree output into a deterministic dict keyed by sorted vertices."""
+    normalized = {}
+    for vertex, metric in degrees.items():
+        normalized[str(vertex)] = {
+            "in_degree": int(metric.get("in_degree", 0)),
+            "out_degree": int(metric.get("out_degree", 0)),
+        }
+    return {vertex: normalized[vertex] for vertex in sorted(normalized, key=_natural_vertex_key)}
+
+
+def graph_to_expected_metadata(graph):
+    """Return canonical metadata from the Graph object that the LLM is expected to emit."""
+    if not isinstance(graph, Graph):
+        raise TypeError("graph_to_expected_metadata expects a Graph instance.")
+
+    return {
+        "is_directed": bool(graph.is_directed()),
+        "number_of_vertices": int(graph.get_number_of_vertices()),
+        "number_of_edges": int(graph.get_number_of_edges()),
+        "has_self_loops": bool(graph.has_self_loops()),
+        "has_parallel_edges": bool(graph.has_parallel_edges()),
+        "edge_list": canonicalize_edge_list(graph.get_edge_list()),
+        "vertex_degrees": canonicalize_vertex_degrees(graph.get_indegree_and_outdegree_of_every_vertex()),
+    }
+
+
+def graph_to_expected_metadata_string(graph):
+    """Return the exact deterministic metadata block expected from the LLM."""
+    metadata = graph_to_expected_metadata(graph)
+    edge_list_str = str(metadata["edge_list"]).replace("'", '"')
+    vertex_degrees_str = str(metadata["vertex_degrees"]).replace("'", '"')
+    return (
+        f"IS_DIRECTED: {str(metadata['is_directed'])}\n"
+        f"NUMBER_OF_VERTICES: {metadata['number_of_vertices']}\n"
+        f"NUMBER_OF_EDGES: {metadata['number_of_edges']}\n"
+        f"HAS_SELF_LOOPS: {str(metadata['has_self_loops'])}\n"
+        f"HAS_PARALLEL_EDGES: {str(metadata['has_parallel_edges'])}\n"
+        f"EDGE_LIST: {edge_list_str}\n"
+        f"VERTEX_DEGREES: {vertex_degrees_str}\n"
     )
 
 
@@ -454,27 +578,34 @@ def clear_log():
     with open(LLM_LOG_FILE, "w", encoding="utf-8") as f:
         f.write("")
 
-def select_graphs_with_bias(graph_folders, count, bias):
+def select_graphs_with_bias(graph_folders, count, bias=None):
     """
-    Select 'count' graph folders with bias towards the last one.
-    
+    Select 'count' graph folders with optional bias toward the last folder(s).
+
     Args:
         graph_folders: List of folder names (sorted, e.g., ['01', '02', ..., 'N'])
         count: Number of folders to select
-        bias: Probability [0.0, 1.0] for last folder in each draw
-    
+        bias: If None, sample uniformly from all folders including the last one.
+              If a float in [0.0, 1.0], bias the selection toward the final two folders.
+
     Returns:
         List of selected folder names
     """
+    if not graph_folders:
+        return []
+
+    if bias is None:
+        return [random.choice(graph_folders) for _ in range(count)]
+
     selected = []
     for _ in range(count):
         if random.random() < bias and len(graph_folders) > 2:
-            # Select the last two folders with probability 'bias'
+            # Select from the last two folders with probability 'bias'
             available = graph_folders[-2:]
             selected.append(random.choice(available))
         else:
             # Select any other folder uniformly
-            available = graph_folders[:-2] if len(graph_folders) > 2 else graph_folders # here [:-2] means: last 2 folders are excluded from selection
+            available = graph_folders[:-2] if len(graph_folders) > 2 else graph_folders
             if available:
                 selected.append(random.choice(available))
             else:
@@ -508,7 +639,6 @@ def extract_adjacency_matrix_from_response(response):
     if match:
         try:
             matrix_str = match.group(1)
-            # Replace INF with float('inf')
             matrix_str = matrix_str.replace("INF", "float('inf')")
             matrix = ast.literal_eval(matrix_str)
             return matrix
@@ -516,6 +646,45 @@ def extract_adjacency_matrix_from_response(response):
             print(f"Error parsing matrix from response: {e}")
             return None
     return None
+
+
+def extract_bool_field(response, label):
+    match = re.search(rf"{label}:\s*(True|False|true|false)\b", response, re.IGNORECASE)
+    if not match:
+        return None
+    return match.group(1).strip().lower() == "true"
+
+
+def extract_int_field(response, label):
+    match = re.search(rf"{label}:\s*(\d+)\b", response)
+    if not match:
+        return None
+    return int(match.group(1))
+
+
+def extract_edge_list_from_response(response):
+    match = re.search(r"EDGE_LIST:\s*(\[[\s\S]*?\])\s*(?:\n|$)", response)
+    if not match:
+        return None
+    try:
+        value = ast.literal_eval(match.group(1))
+        return canonicalize_edge_list(value)
+    except Exception as exc:
+        print(f"Error parsing edge list from response: {exc}")
+        return None
+
+
+def extract_vertex_degrees_from_response(response):
+    match = re.search(r"VERTEX_DEGREES:\s*(\{[\s\S]*?\})\s*(?:\n|$)", response)
+    if not match:
+        return None
+    try:
+        value = ast.literal_eval(match.group(1))
+        return canonicalize_vertex_degrees(value)
+    except Exception as exc:
+        print(f"Error parsing vertex degrees from response: {exc}")
+        return None
+
 
 def extract_algorithm_from_response(response):
     """
@@ -637,7 +806,6 @@ def matrices_equal(matrix1, matrix2):
             val1 = matrix1[i][j]
             val2 = matrix2[i][j]
             
-            # Handle INF comparison
             if isinstance(val1, float) and isinstance(val2, float):
                 if str(val1) == 'inf' and str(val2) == 'inf':
                     continue
@@ -646,6 +814,49 @@ def matrices_equal(matrix1, matrix2):
                 return False
     
     return True
+
+
+def graph_metadata_matches(response, graph):
+    """Judge all graph metadata in the LLM response against the Graph methods."""
+    expected = graph_to_expected_metadata(graph)
+
+    extracted = {
+        "is_directed": extract_bool_field(response, "IS_DIRECTED"),
+        "number_of_vertices": extract_int_field(response, "NUMBER_OF_VERTICES"),
+        "number_of_edges": extract_int_field(response, "NUMBER_OF_EDGES"),
+        "has_self_loops": extract_bool_field(response, "HAS_SELF_LOOPS"),
+        "has_parallel_edges": extract_bool_field(response, "HAS_PARALLEL_EDGES"),
+        "edge_list": extract_edge_list_from_response(response),
+        "vertex_degrees": extract_vertex_degrees_from_response(response),
+    }
+
+    if any(value is None for value in (
+        extracted["is_directed"],
+        extracted["number_of_vertices"],
+        extracted["number_of_edges"],
+        extracted["has_self_loops"],
+        extracted["has_parallel_edges"],
+        extracted["edge_list"],
+        extracted["vertex_degrees"],
+    )):
+        return False, extracted, expected, "missing metadata field"
+
+    if extracted["is_directed"] != expected["is_directed"]:
+        return False, extracted, expected, "is_directed mismatch"
+    if extracted["number_of_vertices"] != expected["number_of_vertices"]:
+        return False, extracted, expected, "number_of_vertices mismatch"
+    if extracted["number_of_edges"] != expected["number_of_edges"]:
+        return False, extracted, expected, "number_of_edges mismatch"
+    if extracted["has_self_loops"] != expected["has_self_loops"]:
+        return False, extracted, expected, "has_self_loops mismatch"
+    if extracted["has_parallel_edges"] != expected["has_parallel_edges"]:
+        return False, extracted, expected, "has_parallel_edges mismatch"
+    if extracted["edge_list"] != expected["edge_list"]:
+        return False, extracted, expected, "edge_list mismatch"
+    if extracted["vertex_degrees"] != expected["vertex_degrees"]:
+        return False, extracted, expected, "vertex_degrees mismatch"
+
+    return True, extracted, expected, "ok"
 
 # ============================================================================
 # MAIN EXECUTION
@@ -787,6 +998,9 @@ def main():
             'adjacency_correct': 0,
             'adjacency_wrong': 0,
             'adjacency_error': 0,
+            'metadata_correct': 0,
+            'metadata_wrong': 0,
+            'metadata_error': 0,
             'algorithm_correct': 0,
             'algorithm_wrong': 0,
             'algorithm_error': 0,
@@ -817,11 +1031,11 @@ def main():
         
         print(f"[{idx}/{len(combinations)}] {graph_type}/{graph_folder} + {problem_category}/{problem_name}")
         
-        # Load graph and problem
-        graph_content = load_file(graph_filepath)
-        graph_description = graph_format_to_description(graph_content)
+        # Load graph and problem using the Graph class as the source of truth.
+        graph = Graph.from_file(graph_filepath, directed=(graph_type == "directed"))
+        graph_description = graph_to_description(graph)
         problem_description = load_file(problem_path)
-        expected_matrix = load_adjacency_matrix_from_file(matrix_filepath)
+        expected_matrix = graph.get_adjacency_matrix()
         
         if not graph_description or not problem_description:
             print(f"  ❌ ERROR: Failed to load graph or problem")
@@ -895,6 +1109,19 @@ def main():
             save_to_log(f"  LLM adjacency matrix: {matrix_to_string(extracted_matrix)}\n")
             save_to_log(f"  Expected adjacency matrix: {matrix_to_string(expected_matrix)}\n")
             stats['adjacency_wrong'] += 1
+
+        # Check full graph metadata
+        metadata_ok, extracted_metadata, expected_metadata, reason = graph_metadata_matches(response, graph)
+        if metadata_ok:
+            print(f"  ✅ CORRECT GRAPH METADATA")
+            save_to_log(f"  GRAPH METADATA: ✅ CORRECT\n")
+            stats['metadata_correct'] += 1
+        else:
+            print(f"  ❌ WRONG GRAPH METADATA ({reason})")
+            save_to_log(f"  GRAPH METADATA: ❌ WRONG ({reason})\n")
+            save_to_log(f"  LLM metadata: {extracted_metadata}\n")
+            save_to_log(f"  Expected metadata: {expected_metadata}\n")
+            stats['metadata_wrong'] += 1
         
         # Check algorithm
         valid_algos_for_category = GRAPH_ALGORITHMS.get(problem_category, [])
@@ -926,6 +1153,7 @@ def main():
         
         # Print real-time accuracy
         print(f"    Adj Matrix Accuracy: {stats['adjacency_correct']}/{stats['total']} ({100*stats['adjacency_correct']//stats['total']}%)")
+        print(f"    Metadata Accuracy:   {stats['metadata_correct']}/{stats['total']} ({100*stats['metadata_correct']//stats['total']}%)")
         print(f"    Algorithm Accuracy:  {stats['algorithm_correct']}/{stats['total']} ({100*stats['algorithm_correct']//stats['total']}%)")
         print()
         
@@ -956,6 +1184,11 @@ ADJACENCY MATRIX:
   ✅ Correct: {stats['adjacency_correct']} ({100*stats['adjacency_correct']//stats['total'] if stats['total'] > 0 else 0}%)
   ❌ Wrong: {stats['adjacency_wrong']}
   ⚠️  Error: {stats['adjacency_error']}
+
+GRAPH METADATA:
+  ✅ Correct: {stats['metadata_correct']} ({100*stats['metadata_correct']//stats['total'] if stats['total'] > 0 else 0}%)
+  ❌ Wrong: {stats['metadata_wrong']}
+  ⚠️  Error: {stats['metadata_error']}
 
 ALGORITHM CHOICE:
   ✅ Correct: {stats['algorithm_correct']} ({100*stats['algorithm_correct']//stats['total'] if stats['total'] > 0 else 0}%)
