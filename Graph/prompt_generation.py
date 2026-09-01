@@ -4,9 +4,14 @@ import re
 import ast
 import json
 from pathlib import Path
+import sys
 from collections import defaultdict
 
 from graph import Graph
+
+# Fix stdout encoding for printing emojis on Windows
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
 
 # Use os.urandom for true randomness via SystemRandom
 random = random.SystemRandom()
@@ -14,6 +19,12 @@ random = random.SystemRandom()
 # ============================================================================
 # CONFIGURATION
 # ============================================================================
+
+# Model configuration
+USE_SLM = True  # Set to True to use local Gemma SLM (via LM Studio), False to use Gemini via agy CLI
+LM_STUDIO_URL = "http://127.0.0.1:1234/v1/chat/completions"
+LM_STUDIO_MODEL = "google/gemma-3-4b"
+SLM_TEMPERATURE = 0.2
 
 # Set to None to process all combinations, or an integer to limit prompts
 MAX_PROMPTS_COUNT = 3  # Change to 4, 10, etc. to limit
@@ -24,14 +35,63 @@ NUMBER_OF_GRAPHS = 10
 LAST_GRAPH_BIAS = 0.01
 
 # Base directories
-PROBLEMS_BASE = r"Graph\Problems"
-DIRECTED_GRAPHS_BASE = r"Graph\graph_samples\directed"
-UNDIRECTED_GRAPHS_BASE = r"Graph\graph_samples\undirected"
-LLM_LOG_FILE = r"Graph\llm_log.txt"
-PROGRESS_FILE = r"Graph\prompt_generation_progress.json"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PROBLEMS_BASE = os.path.join(BASE_DIR, "Problems")
+DIRECTED_GRAPHS_BASE = os.path.join(BASE_DIR, "graph_samples", "directed")
+UNDIRECTED_GRAPHS_BASE = os.path.join(BASE_DIR, "graph_samples", "undirected")
+LLM_LOG_FILE = os.path.join(BASE_DIR, "llm_log.txt")
+PROGRESS_FILE = os.path.join(BASE_DIR, "prompt_generation_progress.json")
+
+# ============================================================================
+# LLM / SLM INFERENCE HELPER
+# ============================================================================
+
+def call_model(prompt: str, max_tokens: int = 2048) -> str:
+    """
+    Unified model invocation function.
+    If USE_SLM is True, runs inference locally using Gemma via LM Studio API.
+    If USE_SLM is False, calls Gemini via the agy CLI.
+    """
+    if USE_SLM:
+        import requests
+        response = requests.post(
+            LM_STUDIO_URL,
+            json={
+                "model": LM_STUDIO_MODEL,
+                "messages": [
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": SLM_TEMPERATURE,
+                "max_tokens": max_tokens,
+            },
+            timeout=300,
+        )
+        response.raise_for_status()
+        return response.json()["choices"][0]["message"]["content"].strip()
+    else:
+        import subprocess
+        result = subprocess.run(
+            [
+                r"C:\Users\ASUS\AppData\Local\agy\bin\agy.exe",
+                "--model",
+                "gemini-3.7-flash-high",
+                "-p",
+                prompt,
+            ],
+            capture_output=True,
+            text=True,
+        )
+        return result.stdout.strip()
 
 # Algorithm reference dictionary
 GRAPH_ALGORITHMS = {
+    "All_Pairs_Shortest_Path": [
+        "Floyd-Warshall", "Johnson's Algorithm", "Repeated Dijkstra", "Repeated Bellman-Ford",
+    ],
+    "BFS_DFS": [
+        "BFS", "Breadth First Search", "DFS", "Depth First Search",
+        "Breadth-First Search", "Depth-First Search", "Graph Traversal", "Level Order Traversal",
+    ],
     "Bipartite_Matching": [
         "Hopcroft-Karp", "Hungarian Algorithm", "Munkres",
         "Ford-Fulkerson", "Dinic", "Blossom Algorithm",
@@ -41,10 +101,29 @@ GRAPH_ALGORITHMS = {
         "DFS", "Depth First Search", "Union-Find", "Kahn's Algorithm",
         "Tarjan's SCC", "Kosaraju's Algorithm", "Topological Sort",
     ],
+    "MST": [
+        "Kruskal's Algorithm", "Prim's Algorithm", "Boruvka's Algorithm", "Reverse-Delete Algorithm",
+    ],
+    "Max_Flow": [
+        "Ford-Fulkerson", "Edmonds-Karp", "Dinic", "Push-Relabel",
+        "Relabel-to-Front", "Boykov-Kolmogorov", "Capacity Scaling",
+    ],
+    "Minimum_Cut": [
+        "Karger's Algorithm", "Karger-Stein", "Stoer-Wagner", "Gomory-Hu",
+        "Ford-Fulkerson", "Edmonds-Karp", "Dinic", "Max-Flow Min-Cut",
+    ],
+    "SCC": [
+        "Tarjan's SCC", "Tarjan's Algorithm", "Kosaraju's Algorithm",
+        "Kosaraju-Sharir", "Kosaraju", "Path-based strong component algorithm", "Gabow's Algorithm",
+    ],
     "Shortest_Path": [
         "Dijkstra", "Bellman-Ford", "Floyd-Warshall", "A*",
         "Johnson's Algorithm", "BFS", "Bidirectional Dijkstra",
         "SPFA", "D* Lite",
+    ],
+    "Topological_Sort": [
+        "Topological Sort", "Kahn's Algorithm", "DFS", "Depth First Search",
+        "Tarjan's Topological Sort", "Topological Ordering",
     ],
     "TSP": [
         "Held-Karp", "Branch and Bound", "Nearest Neighbor",
@@ -78,7 +157,7 @@ NUMBER_OF_EDGES: 3
 HAS_SELF_LOOPS: False
 HAS_PARALLEL_EDGES: False
 EDGE_LIST: [["A", "B", 1], ["B", "C", 3], ["C", "A", 2]]
-VERTEX_DEGREES: {"A": {"in_degree": 1, "out_degree": 1}, "B": {"in_degree": 1, "out_degree": 1}, "C": {"in_degree": 1, "out_degree": 1}}
+VERTEX_DEGREES: {{"A": {{"in_degree": 1, "out_degree": 1}}, "B": {{"in_degree": 1, "out_degree": 1}}, "C": {{"in_degree": 1, "out_degree": 1}}}}
 ALGORITHM NAME: <ALGORITHM NAME>
 EXPLANATION OF ALGORITHM CHOICE: <EXPLANATION>
 
@@ -764,7 +843,7 @@ NO
             [
                 r"C:\Users\ASUS\AppData\Local\agy\bin\agy.exe",
                 "--model",
-                "gemini-3.5-flash-high",
+                "gemini-3.7-flash-high",
                 "-p",
                 prompt,
             ],
@@ -1051,21 +1130,8 @@ def main():
 
         print(prompt)
         
-        import subprocess
-        
-        result = subprocess.run(
-            [
-                r"C:\Users\ASUS\AppData\Local\agy\bin\agy.exe",
-                "--model",
-                "gemini-3.7-flash-high",
-                "-p",
-                prompt,
-            ],
-            capture_output=True,
-            text=True,
-        )
-        
-        response = result.stdout
+        # Call model (SLM or agy CLI depending on USE_SLM)
+        response = call_model(prompt, max_tokens=2048)
         # =====================================================================
 
         print("LLM's Complete, Unedited Response:", response)
@@ -1099,6 +1165,7 @@ def main():
             print(f"  ✅ CORRECT ADJACENCY MATRIX")
             save_to_log(f"\n[{idx}] {graph_type}/{graph_folder} + {problem_category}/{problem_name}")
             save_to_log(f"  ADJACENCY MATRIX: ✅ CORRECT\n")
+            save_to_log(f"  LLM adjacency matrix: {matrix_to_string(extracted_matrix)}\n")
             stats['adjacency_correct'] += 1
         else:
             print(f"  ❌ WRONG ADJACENCY MATRIX")
@@ -1115,6 +1182,7 @@ def main():
         if metadata_ok:
             print(f"  ✅ CORRECT GRAPH METADATA")
             save_to_log(f"  GRAPH METADATA: ✅ CORRECT\n")
+            save_to_log(f"  LLM metadata: {extracted_metadata}\n")
             stats['metadata_correct'] += 1
         else:
             print(f"  ❌ WRONG GRAPH METADATA ({reason})")
