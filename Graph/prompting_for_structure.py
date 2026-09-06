@@ -1,0 +1,606 @@
+import os
+import random
+import re
+import ast
+import json
+from pathlib import Path
+import sys
+from collections import defaultdict
+import csv
+import time
+
+from graph import Graph
+
+# Fix stdout encoding for printing emojis on Windows
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
+
+# Use os.urandom for true randomness via SystemRandom
+random = random.SystemRandom()
+
+# ============================================================================
+# CONFIGURATION
+# ============================================================================
+
+# Model configuration
+USE_SLM = True  # Set to True to use local Gemma SLM (via LM Studio), False to use Gemini via agy CLI
+LM_STUDIO_URL = "http://127.0.0.1:1234/v1/chat/completions"
+LM_STUDIO_MODEL = "google/gemma-3-4b"
+SLM_TEMPERATURE = 0.2
+
+# Set to None to process all combinations, or an integer to limit prompts
+MAX_PROMPTS_COUNT = 3  # if None then, ALL prompts are generated; otherwise if integer value then, that much prompts are generated.
+NUMBER_OF_GRAPHS = 10 # if None then, ALL graphs are selected; otherwise if integer value then, that much graphs are selected.
+
+# Base directories
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DIRECTED_GRAPHS_BASE = os.path.join(BASE_DIR, "graph_samples", "directed")
+UNDIRECTED_GRAPHS_BASE = os.path.join(BASE_DIR, "graph_samples", "undirected")
+LLM_LOG_FILE = os.path.join(BASE_DIR, "llm_log_structure.txt")
+LLM_CSV_LOG_FILE = os.path.join(BASE_DIR, "llm_log_structure.csv")
+PROGRESS_FILE = os.path.join(BASE_DIR, "prompt_generation_progress_structure.json")
+
+# ============================================================================
+# LLM / SLM INFERENCE HELPER
+# ============================================================================
+
+def call_model(prompt: str) -> str:
+    """
+    Unified model invocation function.
+    If USE_SLM is True, runs inference locally using Gemma via LM Studio API.
+    If USE_SLM is False, calls Gemini via the agy CLI.
+    """
+    if USE_SLM:
+        import requests
+        response = requests.post(
+            LM_STUDIO_URL,
+            json={
+                "model": LM_STUDIO_MODEL,
+                "messages": [
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": SLM_TEMPERATURE,
+                },
+        )
+        response.raise_for_status()
+        return response.json()["choices"][0]["message"]["content"].strip()
+    else:
+        import subprocess
+        result = subprocess.run(
+            [
+                r"C:\Users\ASUS\AppData\Local\agy\bin\agy.exe",
+                "--model",
+                "gemini-3.8-flash-high",
+                "-p",
+                prompt,
+            ],
+            capture_output=True,
+            text=True,
+        )
+        return result.stdout.strip()
+
+# Prompt template (modular, easily replaceable)
+GRAPH_PROMPT = """DO NOT USE THE INTERNET.
+
+Consider the graph described below:
+
+{graph_description}
+
+Extract the exact graph metadata based on the description above. Use deterministic formatting and do not add extra labels or commentary.
+
+Your output must EXACTLY follow this format, in this exact order:
+
+ADJACENCY MATRIX: [[0, 1, 0], [0, 0, 3], [2, 0, 0]]
+IS_DIRECTED: True
+NUMBER_OF_VERTICES: 3
+NUMBER_OF_EDGES: 3
+HAS_SELF_LOOPS: False
+EDGE_LIST: [["A", "B", 1], ["B", "C", 3], ["C", "A", 2]]
+VERTEX_DEGREES: {{"A": {{"in_degree": 1, "out_degree": 1}}, "B": {{"in_degree": 1, "out_degree": 1}}, "C": {{"in_degree": 1, "out_degree": 1}}}}
+
+Important:
+- Use Python literal formatting for all structured values.
+- Boolean values must be written as True or False.
+- EDGE_LIST must be a list of [source, destination, weight] triples.
+- VERTEX_DEGREES must map each vertex to a dictionary with in_degree and out_degree keys.
+- For undirected graphs, in_degree and out_degree should be equal to the undirected degree.
+- Sort the EDGE_LIST and VERTEX_DEGREES entries in a deterministic vertex order before writing them.
+"""
+
+# ============================================================================
+# UTILITY FUNCTIONS
+# ============================================================================
+
+def _natural_vertex_key(vertex):
+    """
+    Natural sort key for vertex labels.
+    """
+    parts = re.split(r'(\d+)', vertex)
+    return tuple(
+        (0, int(part)) if part.isdigit()
+        else (1, part.lower())
+        for part in parts
+        if part
+    )
+
+def graph_to_description(graph):
+    """Build the natural-language graph description directly from a Graph object."""
+    if not isinstance(graph, Graph):
+        raise TypeError("graph_to_description expects a Graph instance.")
+
+    vertices = sorted(graph.vertices, key=_natural_vertex_key)
+    graph_type = "DIRECTED" if graph.is_directed() else "UNDIRECTED"
+    vertex_word = "vertex" if len(vertices) == 1 else "vertices"
+
+    description = (
+        f"Graph: a {graph_type.lower()} weighted graph with {len(vertices)} {vertex_word}. "
+        f"The vertices are {', '.join(vertices)}.\n"
+    )
+    description += f"The graph contains {graph.get_number_of_edges()} {'edge' if graph.get_number_of_edges() == 1 else 'edges'}.\n"
+    description += "Edge information:\n"
+
+    if graph.is_directed():
+        adjacency = graph.adjacency
+        for vertex in vertices:
+            outgoing = sorted(adjacency.get(vertex, {}).items(), key=lambda item: _natural_vertex_key(item[0]))
+            if not outgoing:
+                description += f"- Vertex {vertex} has no outgoing edges.\n"
+                continue
+
+            edge_descriptions = [f"{neighbor} with weight {weight}" for neighbor, weight in outgoing]
+            if len(edge_descriptions) == 1:
+                description += f"- Vertex {vertex} has an outgoing edge to {edge_descriptions[0]}.\n"
+            else:
+                edge_text = ", ".join(edge_descriptions[:-1]) + f", and {edge_descriptions[-1]}"
+                description += f"- Vertex {vertex} has outgoing edges to {edge_text}.\n"
+    else:
+        seen = set()
+        neighbors = {vertex: [] for vertex in vertices}
+        for u, v, weight in graph.get_edge_list():
+            pair = tuple(sorted((u, v)))
+            if pair in seen:
+                continue
+            seen.add(pair)
+            neighbors[u].append((v, weight))
+            neighbors[v].append((u, weight))
+
+        for vertex in vertices:
+            incident = sorted(neighbors.get(vertex, []), key=lambda item: _natural_vertex_key(item[0]))
+            if not incident:
+                description += f"- Vertex {vertex} is not connected to any other vertex.\n"
+                continue
+
+            edge_descriptions = [f"{neighbor} with weight {weight}" for neighbor, weight in incident]
+            if len(edge_descriptions) == 1:
+                description += f"- Vertex {vertex} is connected to {edge_descriptions[0]}.\n"
+            else:
+                edge_text = ", ".join(edge_descriptions[:-1]) + f", and {edge_descriptions[-1]}"
+                description += f"- Vertex {vertex} is connected to {edge_text}.\n"
+
+    return description
+
+def canonicalize_edge_list(edge_list):
+    """Normalize edge list output into a deterministic sorted list of triples."""
+    normalized = []
+    for u, v, weight in edge_list:
+        normalized.append((str(u), str(v), int(weight)))
+    return sorted(
+        normalized,
+        key=lambda item: (_natural_vertex_key(item[0]), _natural_vertex_key(item[1]), item[2]),
+    )
+
+def canonicalize_vertex_degrees(degrees):
+    """Normalize degree output into a deterministic dict keyed by sorted vertices."""
+    normalized = {}
+    for vertex, metric in degrees.items():
+        normalized[str(vertex)] = {
+            "in_degree": int(metric.get("in_degree", 0)),
+            "out_degree": int(metric.get("out_degree", 0)),
+        }
+    return {vertex: normalized[vertex] for vertex in sorted(normalized, key=_natural_vertex_key)}
+
+def graph_to_expected_metadata(graph: Graph) -> dict:
+    """Return canonical metadata from the Graph object that the LLM is expected to emit."""
+    if not isinstance(graph, Graph):
+        raise TypeError("graph_to_expected_metadata expects a Graph instance.")
+
+    return {
+        "is_directed": bool(graph.is_directed()),
+        "number_of_vertices": int(graph.get_number_of_vertices()),
+        "number_of_edges": int(graph.get_number_of_edges()),
+        "has_self_loops": bool(graph.has_self_loops()),
+        "edge_list": canonicalize_edge_list(graph.get_edge_list()),
+        "vertex_degrees": canonicalize_vertex_degrees(graph.get_indegree_and_outdegree_of_every_vertex()),
+    }
+
+def log_to_csv(filepath, row_dict, fieldnames):
+    file_exists = os.path.isfile(filepath)
+    try:
+        with open(filepath, "a", newline="", encoding="utf-8") as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            if not file_exists:
+                writer.writeheader()
+            writer.writerow(row_dict)
+    except Exception as e:
+        print(f"Error writing to CSV: {e}")
+
+def save_to_log(message):
+    """Append message to LLM log file."""
+    with open(LLM_LOG_FILE, "a", encoding="utf-8") as f:
+        f.write(message + "\n")
+
+def clear_log():
+    """Clear the LLM log file at start."""
+    with open(LLM_LOG_FILE, "w", encoding="utf-8") as f:
+        f.write("")
+
+def select_graphs(graph_folders, count):
+    """
+    If 'count' is None, return all graph folders.
+    Else, select 'count' graph folders uniformly at random.
+    """
+    if not graph_folders:
+        return []
+    if count is None:
+        return list(graph_folders)
+    return [random.choice(graph_folders) for _ in range(count)]
+
+
+def extract_adjacency_matrix_from_response(response):
+    match = re.search(r"ADJACENCY MATRIX:\s*(\[\[.*?\]\])", response, re.DOTALL)
+    if match:
+        try:
+            matrix_str = match.group(1)
+            matrix_str = matrix_str.replace("INF", "float('inf')")
+            matrix = ast.literal_eval(matrix_str)
+            return matrix
+        except Exception as e:
+            print(f"Error parsing matrix from response: {e}")
+            return None
+    return None
+
+def extract_bool_field(response, label):
+    match = re.search(rf"{label}:\s*(True|False|true|false)\b", response, re.IGNORECASE)
+    if not match:
+        return None
+    return match.group(1).strip().lower() == "true"
+
+def extract_int_field(response, label):
+    match = re.search(rf"{label}:\s*(\d+)\b", response)
+    if not match:
+        return None
+    return int(match.group(1))
+
+def extract_edge_list_from_response(response):
+    match = re.search(r"EDGE_LIST:\s*(\[[\s\S]*?\])\s*(?:\n|$)", response)
+    if not match:
+        return None
+    try:
+        value = ast.literal_eval(match.group(1))
+        return canonicalize_edge_list(value)
+    except Exception as exc:
+        print(f"Error parsing edge list from response: {exc}")
+        return None
+
+def extract_vertex_degrees_from_response(response):
+    match = re.search(r"VERTEX_DEGREES:\s*(\{[\s\S]*?\})\s*(?:\n|$)", response)
+    if not match:
+        return None
+    try:
+        value = ast.literal_eval(match.group(1))
+        return canonicalize_vertex_degrees(value)
+    except Exception as exc:
+        print(f"Error parsing vertex degrees from response: {exc}")
+        return None
+
+def matrix_to_string(matrix):
+    """Convert matrix to a readable string with INF tokens."""
+    if matrix is None:
+        return "None"
+
+    def convert_value(v):
+        if isinstance(v, float) and str(v) == 'inf':
+            return "INF"
+        return str(v)
+
+    rows = []
+    for row in matrix:
+        rows.append("[" + ", ".join(convert_value(v) for v in row) + "]")
+    return "[" + ", ".join(rows) + "]"
+
+
+
+def graph_metadata_matches(response, graph):
+    """Judge all graph metadata in the LLM response against the Graph methods."""
+    expected = graph_to_expected_metadata(graph)
+
+    extracted = {
+        "is_directed": extract_bool_field(response, "IS_DIRECTED"),
+        "number_of_vertices": extract_int_field(response, "NUMBER_OF_VERTICES"),
+        "number_of_edges": extract_int_field(response, "NUMBER_OF_EDGES"),
+        "has_self_loops": extract_bool_field(response, "HAS_SELF_LOOPS"),
+        "edge_list": extract_edge_list_from_response(response),
+        "vertex_degrees": extract_vertex_degrees_from_response(response),
+    }
+
+    if any(value is None for value in (
+        extracted["is_directed"],
+        extracted["number_of_vertices"],
+        extracted["number_of_edges"],
+        extracted["has_self_loops"],
+        extracted["edge_list"],
+        extracted["vertex_degrees"],
+    )):
+        return False, extracted, expected, "missing metadata field"
+
+    if extracted["is_directed"] != expected["is_directed"]:
+        return False, extracted, expected, "is_directed mismatch"
+    if extracted["number_of_vertices"] != expected["number_of_vertices"]:
+        return False, extracted, expected, "number_of_vertices mismatch"
+    if extracted["number_of_edges"] != expected["number_of_edges"]:
+        return False, extracted, expected, "number_of_edges mismatch"
+    if extracted["has_self_loops"] != expected["has_self_loops"]:
+        return False, extracted, expected, "has_self_loops mismatch"
+    if extracted["edge_list"] != expected["edge_list"]:
+        return False, extracted, expected, "edge_list mismatch"
+    if extracted["vertex_degrees"] != expected["vertex_degrees"]:
+        return False, extracted, expected, "vertex_degrees mismatch"
+
+    return True, extracted, expected, "ok"
+
+# ============================================================================
+# MAIN EXECUTION
+# ============================================================================
+
+def main():
+    print("="*80)
+    print("GRAPH STRUCTURE TESTER")
+    print("="*80)
+    
+    progress_file_path = PROGRESS_FILE
+    state = None
+    if os.path.exists(progress_file_path):
+        try:
+            with open(progress_file_path, "r", encoding="utf-8") as f:
+                state = json.load(f)
+            print(f"\n[INFO] Loaded progress from {progress_file_path}. Resuming...")
+        except Exception as e:
+            print(f"  ❌ ERROR loading progress file: {e}. Starting fresh.")
+            
+    if state:
+        combinations = state.get("combinations", [])
+        stats = state.get("stats", {
+            'total': 0,
+            'adjacency_correct': 0,
+            'adjacency_wrong': 0,
+            'adjacency_error': 0,
+            'metadata_correct': 0,
+            'metadata_wrong': 0,
+            'metadata_error': 0,
+        })
+        stats.setdefault('failed_adjacency_matrices', [])
+        start_idx = state.get("next_idx", 0)
+        
+        save_to_log("="*80 + "\n")
+        save_to_log(f"RESUMING GRAPH STRUCTURE TESTER LOG (from index {start_idx+1})\n")
+        save_to_log("="*80 + "\n\n")
+    else:
+        clear_log()
+        save_to_log("="*80 + "\n")
+        save_to_log("GRAPH STRUCTURE TESTER LOG\n")
+        save_to_log("="*80 + "\n\n")
+        
+        print("\n[STEP 1] Collecting graphs...")
+        
+        directed_folders = sorted([d for d in os.listdir(DIRECTED_GRAPHS_BASE)
+                                   if os.path.isdir(os.path.join(DIRECTED_GRAPHS_BASE, d))])
+        
+        undirected_folders = sorted([d for d in os.listdir(UNDIRECTED_GRAPHS_BASE)
+                                     if os.path.isdir(os.path.join(UNDIRECTED_GRAPHS_BASE, d))])
+        
+        print(f"  Found {len(directed_folders)} directed graph folders")
+        print(f"  Found {len(undirected_folders)} undirected graph folders")
+        
+        directed_count = None if NUMBER_OF_GRAPHS is None else NUMBER_OF_GRAPHS // 2
+        undirected_count = None if NUMBER_OF_GRAPHS is None else NUMBER_OF_GRAPHS // 2
+        
+        selected_directed = select_graphs(directed_folders, directed_count)
+        selected_undirected = select_graphs(undirected_folders, undirected_count)
+        
+        selected_graphs = [
+            ('directed', d) for d in selected_directed
+        ] + [
+            ('undirected', u) for u in selected_undirected
+        ]
+        
+        print(f"\n  Selected graphs:")
+        for graph_type, folder in selected_graphs:
+            print(f"    - {graph_type}/{folder}")
+            
+        combinations = []
+        for graph_type, graph_folder in selected_graphs:
+            base_dir = DIRECTED_GRAPHS_BASE if graph_type == 'directed' else UNDIRECTED_GRAPHS_BASE
+            combinations.append({
+                'graph_type': graph_type,
+                'graph_folder': graph_folder,
+                'base_dir': base_dir,
+            })
+            
+        total_combinations = len(combinations)
+        print(f"\n  Total graph combinations: {total_combinations}")
+        print(f"  MAX_PROMPTS_COUNT: {MAX_PROMPTS_COUNT if MAX_PROMPTS_COUNT else 'None (all)'}")
+        
+        if MAX_PROMPTS_COUNT:
+            combinations = random.sample(
+                combinations,
+                min(MAX_PROMPTS_COUNT, len(combinations))
+            )
+            print(f"  Limited to: {len(combinations)} graphs")
+            
+        stats = {
+            'total': 0,
+            'adjacency_correct': 0,
+            'adjacency_wrong': 0,
+            'adjacency_error': 0,
+            'metadata_correct': 0,
+            'metadata_wrong': 0,
+            'metadata_error': 0,
+            'failed_adjacency_matrices': [],
+        }
+        start_idx = 0
+        
+    print("\n[STEP 2] Processing graphs...\n")
+    
+    for idx, combo in enumerate(combinations[start_idx:], start_idx + 1):
+        graph_type = combo['graph_type']
+        graph_folder = combo['graph_folder']
+        base_dir = combo['base_dir']
+        
+        stats['total'] += 1
+        
+        graph_filepath = os.path.join(base_dir, graph_folder, f"graph_{graph_folder}.txt")
+        matrix_filepath = os.path.join(base_dir, graph_folder, f"adjacency_matrix_{graph_folder}.txt")
+        
+        print(f"[{idx}/{len(combinations)}] {graph_type}/{graph_folder}")
+        
+        graph = Graph.from_file(graph_filepath, directed=(graph_type == "directed"))
+        graph_description = graph_to_description(graph)
+        expected_matrix = graph.get_adjacency_matrix()
+        
+        if not graph_description:
+            print(f"  ❌ ERROR: Failed to load graph")
+            save_to_log(f"\n[{idx}] {graph_type}/{graph_folder}")
+            save_to_log(f"  ❌ ERROR: Failed to load files\n")
+            continue
+        
+        prompt = GRAPH_PROMPT.format(
+            graph_description=graph_description,
+        )
+
+        print(prompt) # just print the raw prompt that is being fed to the model.
+        
+        start_time = time.time()
+        response = call_model(prompt)
+        end_time = time.time()
+        duration = round(end_time - start_time, 2)
+
+        print("LLM's Complete, Unedited Response:", response)
+        print("-" * 80)
+        
+        extracted_matrix = extract_adjacency_matrix_from_response(response)
+        
+        if expected_matrix is None:
+            print(f"  ❌ ERROR: Expected matrix file not found")
+            save_to_log(f"\n[{idx}] {graph_type}/{graph_folder}")
+            save_to_log(f"  ADJACENCY MATRIX: ❌ ERROR (expected file missing)\n")
+            stats['adjacency_error'] += 1
+        elif extracted_matrix is None:
+            print(f"  ❌ WRONG ADJACENCY MATRIX (extraction failed)")
+            print(f"     LLM adjacency matrix: {extracted_matrix}")
+            print(f"     Expected adjacency matrix: {matrix_to_string(expected_matrix)}")
+            save_to_log(f"\n[{idx}] {graph_type}/{graph_folder}")
+            save_to_log(f"  ADJACENCY MATRIX: ❌ WRONG (extraction failed)\n")
+            save_to_log(f"  LLM adjacency matrix: {extracted_matrix}\n")
+            save_to_log(f"  Expected adjacency matrix: {matrix_to_string(expected_matrix)}\n")
+            stats['adjacency_wrong'] += 1
+            stats['failed_adjacency_matrices'].append(f"{graph_type}/{graph_folder}")
+        elif graph.adjacency_matrix_matches(extracted_matrix):
+            print(f"  ✅ CORRECT ADJACENCY MATRIX")
+            save_to_log(f"\n[{idx}] {graph_type}/{graph_folder}")
+            save_to_log(f"  ADJACENCY MATRIX: ✅ CORRECT\n")
+            save_to_log(f"  LLM adjacency matrix: {matrix_to_string(extracted_matrix)}\n")
+            stats['adjacency_correct'] += 1
+        else:
+            print(f"  ❌ WRONG ADJACENCY MATRIX")
+            print(f"     LLM adjacency matrix: {matrix_to_string(extracted_matrix)}")
+            print(f"     Expected adjacency matrix: {matrix_to_string(expected_matrix)}")
+            save_to_log(f"\n[{idx}] {graph_type}/{graph_folder}")
+            save_to_log(f"  ADJACENCY MATRIX: ❌ WRONG\n")
+            save_to_log(f"  LLM adjacency matrix: {matrix_to_string(extracted_matrix)}\n")
+            save_to_log(f"  Expected adjacency matrix: {matrix_to_string(expected_matrix)}\n")
+            stats['adjacency_wrong'] += 1
+
+        metadata_ok, extracted_metadata, expected_metadata, reason = graph_metadata_matches(response, graph)
+        if metadata_ok:
+            print(f"  ✅ CORRECT GRAPH METADATA")
+            save_to_log(f"  GRAPH METADATA: ✅ CORRECT\n")
+            save_to_log(f"  LLM metadata: {extracted_metadata}\n")
+            stats['metadata_correct'] += 1
+        else:
+            print(f"  ❌ WRONG GRAPH METADATA ({reason})")
+            save_to_log(f"  GRAPH METADATA: ❌ WRONG ({reason})\n")
+            save_to_log(f"  LLM metadata: {extracted_metadata}\n")
+            save_to_log(f"  Expected metadata: {expected_metadata}\n")
+            stats['metadata_wrong'] += 1
+        
+        csv_row = {
+            "Graph Type": graph_type,
+            "Graph Folder": graph_folder,
+            "Execution Time (s)": duration,
+            "Number of Nodes": len(graph.vertices),
+            "Number of Edges": len(graph.edges),
+            "Adjacency Match": graph.adjacency_matrix_matches(extracted_matrix) if extracted_matrix is not None else False,
+            "Adjacency Error": expected_matrix is None or extracted_matrix is None,
+            "Adjacency Entry Match Score": graph.get_adjacency_matrix_entry_score(extracted_matrix) if extracted_matrix is not None else 0.0,
+            "Adjacency Row Match Score": graph.get_adjacency_matrix_row_score(extracted_matrix) if extracted_matrix is not None else 0.0,
+            "LLM Adjacency Matrix": matrix_to_string(extracted_matrix),
+            "Expected Adjacency Matrix": matrix_to_string(expected_matrix),
+            "Metadata Match": metadata_ok,
+            "LLM Metadata": json.dumps(extracted_metadata) if extracted_metadata else "",
+            "Expected Metadata": json.dumps(expected_metadata) if expected_metadata else "",
+            "Metadata Error Reason": reason if not metadata_ok else "",
+            "Prompt Length (chars)": len(prompt),
+            "Response Length (chars)": len(response),
+            "Raw Response": response
+        }
+        fieldnames = list(csv_row.keys())
+        log_to_csv(LLM_CSV_LOG_FILE, csv_row, fieldnames)
+        
+        print(f"    Adj Matrix Accuracy: {stats['adjacency_correct']}/{stats['total']} ({100*stats['adjacency_correct']//stats['total']}%)")
+        print(f"    Metadata Accuracy:   {stats['metadata_correct']}/{stats['total']} ({100*stats['metadata_correct']//stats['total']}%)")
+        print()
+        
+        state_to_save = {
+            "combinations": combinations,
+            "stats": stats,
+            "next_idx": idx
+        }
+        with open(PROGRESS_FILE, "w", encoding="utf-8") as f:
+            json.dump(state_to_save, f, indent=4)
+    
+    print("\n" + "="*80)
+    print("FINAL STATISTICS")
+    print("="*80)
+    
+    final_stats_text = f"""
+FINAL STATISTICS
+================
+
+Total Graphs Processed: {stats['total']}
+
+ADJACENCY MATRIX:
+  ✅ Correct: {stats['adjacency_correct']} ({100*stats['adjacency_correct']//stats['total'] if stats['total'] > 0 else 0}%)
+  ❌ Wrong: {stats['adjacency_wrong']}
+  ⚠️  Error: {stats['adjacency_error']}
+
+GRAPH METADATA:
+  ✅ Correct: {stats['metadata_correct']} ({100*stats['metadata_correct']//stats['total'] if stats['total'] > 0 else 0}%)
+  ❌ Wrong: {stats['metadata_wrong']}
+  ⚠️  Error: {stats['metadata_error']}
+"""
+    
+    if stats.get('failed_adjacency_matrices'):
+        final_stats_text += "\nFAILED ADJACENCY MATRICES (Returned None):\n"
+        for failed in stats['failed_adjacency_matrices']:
+            final_stats_text += f"  - {failed}\n"
+            
+    print(final_stats_text)
+    save_to_log(final_stats_text)
+    print(f"\nLog file: {LLM_LOG_FILE}")
+    save_to_log(f"\n{'='*80}\n")
+    
+    if os.path.exists(PROGRESS_FILE):
+        os.remove(PROGRESS_FILE)
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,163 @@
+## 1. LM Studio Local LLM Command Cheat Sheet
+
+Your LM Studio CLI is:
+
+```text
+C:\Users\ASUS\.lmstudio\bin\lms.exe
+```
+
+For convenience, you can temporarily define:
+
+```powershell
+$lms = "C:\Users\ASUS\.lmstudio\bin\lms.exe"
+```
+
+Then use `$lms` in the commands below.
+
+### Check available models
+
+```powershell
+& $lms ls
+```
+
+Shows models installed locally.
+
+### See currently loaded models
+
+```powershell
+& $lms ps
+```
+
+### Start the local API server
+
+```powershell
+& $lms server start
+```
+
+Default endpoint:
+
+```text
+http://127.0.0.1:1234
+```
+
+### Stop the local API server
+
+```powershell
+& $lms server stop
+```
+
+### Check server status
+
+```powershell
+& $lms server status
+```
+
+### Load a model
+
+First see exact model identifiers:
+
+```powershell
+& $lms ls
+```
+
+Then load one:
+
+```powershell
+& $lms load google/gemma-3-4b
+```
+
+### Unload a model
+
+```powershell
+& $lms unload google/gemma-3-4b
+```
+
+### Unload + stop everything
+
+```powershell
+& $lms unload google/gemma-3-4b
+& $lms server stop
+```
+
+### Start server + load model
+
+```powershell
+& $lms server start
+& $lms load google/gemma-3-4b
+```
+
+### Check GPU usage
+
+```powershell
+nvidia-smi
+```
+
+### Continuously monitor GPU
+
+```powershell
+nvidia-smi -l 1
+```
+
+Updates every second.
+
+### Test the API
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:1234/v1/models
+```
+
+### Test a chat completion
+
+```powershell
+$body = @{
+    model = "google/gemma-3-4b"
+    messages = @(
+        @{
+            role = "user"
+            content = "Explain BFS in one sentence."
+        }
+    )
+    temperature = 0.2
+    max_tokens = 100
+} | ConvertTo-Json -Depth 5
+
+$response = Invoke-RestMethod `
+    -Uri "http://127.0.0.1:1234/v1/chat/completions" `
+    -Method POST `
+    -ContentType "application/json" `
+    -Body $body
+
+$response.choices[0].message.content
+```
+
+### Interactive chat directly from terminal
+
+```powershell
+& $lms chat google/gemma-3-4b
+```
+
+Depending on your LM Studio version, you may need to load it first.
+
+### Get model information / download models
+
+The useful discovery command is:
+
+```powershell
+& $lms get --help
+```
+
+And runtime management:
+
+```powershell
+& $lms runtime --help
+```
+
+Also useful:
+
+```powershell
+& $lms load --help
+& $lms unload --help
+& $lms chat --help
+```
+
+That way you're not relying on ancient screenshots from some random YouTube dude running LM Studio version 0.2.17 from the Jurassic period.

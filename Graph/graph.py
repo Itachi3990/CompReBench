@@ -118,12 +118,76 @@ class Graph:
                 return True
         return False
 
-    def has_parallel_edges(self) -> bool:
-        counts = {}
-        for u, v, _ in self._edge_list:
-            key = (u, v) if self._directed else tuple(sorted((u, v)))
-            counts[key] = counts.get(key, 0) + 1
-        return any(value > 1 for value in counts.values())
+    def adjacency_matrix_matches(self, other_matrix: List[List[int]]) -> bool:
+        expected = self.get_adjacency_matrix()
+        if expected is None or other_matrix is None:
+            return False
+        if len(expected) != len(other_matrix):
+            return False
+        for i in range(len(expected)):
+            if len(expected[i]) != len(other_matrix[i]):
+                return False
+            for j in range(len(expected[i])):
+                val1 = expected[i][j]
+                val2 = other_matrix[i][j]
+                if isinstance(val1, float) and isinstance(val2, float):
+                    if str(val1) == 'inf' and str(val2) == 'inf':
+                        continue
+                if val1 != val2:
+                    return False
+        return True
+
+    def get_adjacency_matrix_entry_score(self, other_matrix: List[List[int]]) -> float:
+        expected = self.get_adjacency_matrix()
+        if expected is None or other_matrix is None:
+            return 0.0
+        if len(expected) != len(other_matrix):
+            return 0.0
+        total_entries = 0
+        matching_entries = 0
+        for i in range(len(expected)):
+            if len(expected[i]) != len(other_matrix[i]):
+                return 0.0
+            for j in range(len(expected[i])):
+                total_entries += 1
+                val1 = expected[i][j]
+                val2 = other_matrix[i][j]
+                if isinstance(val1, float) and isinstance(val2, float):
+                    if str(val1) == 'inf' and str(val2) == 'inf':
+                        matching_entries += 1
+                        continue
+                if val1 == val2:
+                    matching_entries += 1
+        if total_entries == 0:
+            return 1.0
+        return matching_entries / total_entries
+
+    def get_adjacency_matrix_row_score(self, other_matrix: List[List[int]]) -> float:
+        expected = self.get_adjacency_matrix()
+        if expected is None or other_matrix is None:
+            return 0.0
+        if len(expected) != len(other_matrix):
+            return 0.0
+        total_rows = len(expected)
+        if total_rows == 0:
+            return 1.0
+        matching_rows = 0
+        for i in range(len(expected)):
+            if len(expected[i]) != len(other_matrix[i]):
+                return 0.0
+            row_match = True
+            for j in range(len(expected[i])):
+                val1 = expected[i][j]
+                val2 = other_matrix[i][j]
+                if isinstance(val1, float) and isinstance(val2, float):
+                    if str(val1) == 'inf' and str(val2) == 'inf':
+                        continue
+                if val1 != val2:
+                    row_match = False
+                    break
+            if row_match:
+                matching_rows += 1
+        return matching_rows / total_rows
 
     def get_indegree_and_outdegree_of_every_vertex(self) -> Dict[str, Dict[str, int]]:
         indegree = {vertex: 0 for vertex in self._adjacency}
@@ -187,6 +251,8 @@ class Graph:
             weight = int(tokens[2]) if len(tokens) >= 3 else 1
             graph.add_edge(u, v, weight)
         return graph
+
+
 
 
 def calculate_adjacency_matrix(graph, directed=None):
