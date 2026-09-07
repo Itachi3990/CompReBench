@@ -1,0 +1,30 @@
+[TRANSCRIPT START]
+DATE: 1943-07-22
+LOCATION: Allied High Command, Logistics Division
+PARTICIPANTS: 
+- GENERAL HASTINGS (Director of Operations)
+- MAJOR CALDWELL (Railway Logistics Officer)
+
+HASTINGS: Major Caldwell, the situation in Sector 4 is critical. The enemy is advancing rapidly, and we have nearly half a million civilian refugees trapped in the central industrial hub. We need to get them out to the coastal safe zones using the existing railway network immediately. I was looking at the preliminary evacuation plans your lieutenants drew up, and frankly, I'm appalled. 
+
+CALDWELL: Sir, the junior officers were trying to find the "shortest path to safety." They spent three days measuring the exact physical length of every stretch of track in miles, trying to map out the single most direct route from the industrial hub to the coast. They even calculated the precise top speed of our steam locomotives to shave minutes off the travel time. 
+
+HASTINGS: That is utterly useless, Major. If we put half a million people on the single shortest railway line, the trains will back up for a hundred miles, and they'll be sitting ducks. 
+
+CALDWELL: I tried to tell them that, Sir. Then the tactical division stepped in and suggested a "minimum cut of the railway" analysis. They wanted to identify the specific bridges and junctions that the enemy might bomb to completely sever our escape routes. They spent hours trying to find the weakest links in our own network. 
+
+HASTINGS: While it might seem like our primary goal should be to find the absolute shortest, fastest train ride for these refugees, or to preemptively identify which bridges the enemy might target, those metrics do not solve the immediate crisis. The enemy is days away. We aren't worried about them cutting the lines yet; we are worried about moving bodies right now. 
+
+CALDWELL: Understood, Sir. The real bottleneck is not distance; it's the rolling stock and the rails themselves. 
+
+HASTINGS: Exactly. The railway network is a sprawling web of mainlines, cargo spurs, and switching yards. We have thousands of train cars, but every single segment of track has a strict limit on how many trains it can safely handle per hour before the signaling system fails and we get collisions. A massive, four-lane main trunk can handle fifty trains an hour, but a rickety rural spur might only handle two. 
+
+CALDWELL: So we need to use all of them. 
+
+HASTINGS: Yes. I want you to be perfectly clear with your lieutenants. We are NOT trying to find the shortest path to the coast. We are NOT trying to identify choke points for defensive purposes, and we are NOT trying to sequence the trains chronologically. 
+
+CALDWELL: Yes, General. 
+
+HASTINGS: We need to push humanity through this network like water through a pipe. I need an algorithm that analyzes the entire interconnected web of tracks and the strict hourly train capacity of every single line. You will route trains simultaneously down every possible path, detour, and backwoods rail spur available. The only number I care about is the final volume. You must calculate and execute the absolute maximum number of refugees that can be continuously pushed through the entire rail network to the coast every single hour, without exceeding the capacity limit of any individual track segment. Maximize the flow, Major. Lives depend on it.
+
+[TRANSCRIPT END]

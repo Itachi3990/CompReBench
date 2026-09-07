@@ -1,0 +1,28 @@
+[TRANSCRIPT START]
+DATE: Year of the Raven, 4th Moon
+LOCATION: The Black Cat Tavern, Undercity of Oakhaven
+PARTICIPANTS: 
+- GARRETT (Master Smuggler)
+- ELARA (Information Broker)
+
+GARRETT: Elara, I need a route. The shipment of powdered dragon scale has arrived at the southern docks, and I need it delivered directly to the alchemist's guild in the inner keep by midnight. Last night, my lieutenant tried to plan this out using a "perfect bipartite matching of guards." He spent hours trying to perfectly pair every single available decoy runner with a specific, corrupt city watchman, assuming that a perfectly matched diversionary tactic was the only way through. 
+
+ELARA: That's incredibly stupid. They would arrest half your crew. I heard your other lieutenant was trying to calculate a "travelling salesperson loop" through the slums. They were mapping out the physical distance between every single one of our safehouses, trying to find a continuous, circular route that visits every safehouse exactly once before heading to the keep. They were obsessing over the precise weight of the gold coins and the exact volume of the contraband in cubic inches.
+
+GARRETT: Which is exactly why I fired both of them this morning. While it might seem like we need to perfectly pair up distractions, or establish a massive, complex loop that utilizes all our safehouses to confuse the authorities, those strategies are unnecessarily complicated and incredibly risky. We don't have the time or the manpower for a city-wide operation. 
+
+ELARA: Right. You just need to move the package from point A to point B. 
+
+GARRETT: The city is a maze of alleys, rooftops, and sewer tunnels. I know every possible path, and I know exactly which guards patrol which intersections. Every single transition from one district to another requires a specific bribe. The gate at the merchant quarter costs fifty gold pieces. The sewer grate under the armory costs twenty. A direct route over the main bridge costs a fortune. 
+
+ELARA: So, you're looking for the route that requires the fewest number of bribes? 
+
+GARRETT: No, absolutely not. A route might require passing through ten different sewer gates that cost five gold each, which is far better than a route that only passes through one main gate that costs five hundred gold. I don't care how many districts I have to cross. 
+
+ELARA: I understand. Let me be perfectly clear: We are NOT trying to find a travelling salesperson loop through the safehouses. We are NOT trying to calculate a bipartite matching of guards to decoys, and we are NOT trying to find the route with the fewest number of steps. 
+
+GARRETT: Exactly. I need your ledger. I need you to analyze the map of the city and the specific, current bribe costs for every single possible chokepoint and alleyway. I need to know the absolute most cost-effective path to take. I want the single, specific sequence of streets and tunnels that begins at the southern docks and ends exactly at the alchemist's guild in the inner keep, ensuring that the total, cumulative cost of the bribes paid along that exact path is the absolute lowest possible amount. 
+
+ELARA: I'll have the route for you in ten minutes. 
+
+[TRANSCRIPT END]

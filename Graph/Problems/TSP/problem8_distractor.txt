@@ -1,0 +1,32 @@
+[TRANSCRIPT START]
+DATE: 2055-11-09
+LOCATION: Neo-San Francisco Public Works, Sanitation Division
+PARTICIPANTS: 
+- CHIEF ENGINEER ROSTOV (Director of Sanitation)
+- JENNA (Logistics AI Programmer)
+
+ROSTOV: Jenna, the new autonomous garbage scows are burning through their hydrogen fuel cells at twice the projected rate. I looked at the routing algorithms your team uploaded last night, and it's a complete mess. Why is the AI calculating the "all pairs shortest path of the dumpsters"? 
+
+JENNA: Well, Chief, the team thought that if the scow knew the absolute shortest distance between every single dumpster and every other dumpster in the city simultaneously, it could make real-time decisions about where to go next based on dynamic trash accumulation. They even factored in the precise weight of the trash in tons and the maximum cubic volume of the scow's compactor. 
+
+ROSTOV: That is incredibly over-engineered and entirely useless. Then I see another subroutine here titled "maximum flow of garbage." Were they trying to treat the sanitation network like a fluid dynamics problem? 
+
+JENNA: Yes. They were trying to calculate the maximum possible volume of trash that could be pushed through the streets to the central landfill per hour, assuming that maximizing throughput was the goal. 
+
+ROSTOV: Jenna, this isn't a water pipeline. A garbage scow is a single, massive vehicle. While it might seem like we are trying to find the absolute shortest path from a random street corner to the landfill, or that we need a pre-calculated matrix of every possible distance, that is completely ignoring how a collection route actually works. 
+
+JENNA: Right. The scow doesn't just go from A to B and stop. 
+
+ROSTOV: Exactly. The scow starts here, at the central maintenance depot. It has a manifest of exactly one hundred and twenty designated collection sectors across the city. The fuel cost to drive between these sectors varies depending on elevation and traffic density. 
+
+JENNA: So we don't care about the weight of the trash or the capacity of the compactor for the routing. 
+
+ROSTOV: No. The scow has enough capacity for the whole shift. Let me be perfectly clear: We are NOT trying to calculate an all pairs shortest path matrix. We are NOT trying to find the maximum flow of garbage to the landfill, and we are NOT trying to perfectly pair up specific scows with specific dumpsters. 
+
+JENNA: Understood. 
+
+ROSTOV: I need your algorithm to generate a single, master flight plan for the scow. It must analyze the fuel costs between all one hundred and twenty sectors. The scow must leave the depot, visit every single one of those one hundred and twenty designated sectors exactly once to empty the bins, and then return the scow to this exact maintenance depot to recharge. You need to calculate the one specific, continuous circuit that accomplishes this entire round trip while guaranteeing that the total, cumulative hydrogen fuel cost is the absolute mathematical minimum. No detours, no redundant loops. Just the single cheapest circuit.
+
+JENNA: I'll rewrite the routing logic right now, Chief.
+
+[TRANSCRIPT END]

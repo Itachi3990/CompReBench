@@ -1,0 +1,30 @@
+[TRANSCRIPT START]
+DATE: 2024-02-19
+LOCATION: OmniCorp Global Services, Level 12 Support Operations
+PARTICIPANTS: 
+- DIANE KOWALSKI (VP of Customer Success)
+- GREGORY MASON (Lead Systems Architect)
+
+KOWALSKI: Gregory, the new automated ticket routing system is a disaster. I have thousands of support tickets that are simply disappearing into the ether. Yesterday, the QA team tried to fix it by running a "topological ordering of the tickets." They thought if they just sorted every single incoming request chronologically based on precise timestamp metrics and customer satisfaction scores, the backlog would clear. 
+
+MASON: I know, Diane. I had to stop them. They were completely focused on the order of operations, thinking it was a scheduling issue. Then the HR analytics team got involved and tried to do a "bipartite matching of agents." They spent forty hours trying to perfectly pair up our tier-1 support staff with specific categories of hardware complaints, assuming that if we just had a perfect one-to-one assignment of personnel to tickets, the system would unclog. They were factoring in average wait times in seconds and agent performance metrics. 
+
+KOWALSKI: Which is absurd. Our support agents are cross-trained. While it might seem like our immediate priority is to chronologically sort the queue to ensure fairness, or to mathematically match specific agents to specific angry customers to maximize our net promoter score, that fundamentally misunderstands the crisis. 
+
+MASON: Right. The tickets aren't waiting in a queue, and they aren't waiting for a specific agent. They are actively bouncing.
+
+KOWALSKI: Exactly! I watched a ticket log this morning. A customer submitted a billing error. The automated rule engine looked at the keyword "hardware," and routed it to Tech Support. Tech Support’s automated filter saw the word "refund" and immediately routed it to Finance. Finance’s filter saw the word "router" and sent it back to Tech Support. 
+
+MASON: And because our system processes internal handoffs in milliseconds, that single ticket bounced between those two departments four thousand times before the server crashed. 
+
+KOWALSKI: Our rule engine is a massive web of "if-then" directional handoffs. Department A forwards to Department B, which might forward to C. Over the last three years, different managers have added thousands of these rules without consulting each other. 
+
+MASON: So, to be clear on the deliverables for my engineering team today: We are NOT trying to chronologically order the ticket queue. We are NOT trying to perfectly pair support agents with incoming complaints, and we are NOT analyzing the customer satisfaction scores or wait times. 
+
+KOWALSKI: Absolutely not. None of that matters if the tickets never stop moving. 
+
+MASON: Okay. 
+
+KOWALSKI: I need your team to run a structural analysis of the entire automated rule engine. Look at the directional flow of every single forwarding rule. I need a definitive, binary answer. Does the network of rules contain a closed repetition? You don't need to fix it yet, and I don't care which departments are involved. Just trace the arrows and tell me, unequivocally, if there is a circular logic loop anywhere in the system. Because if a ticket can follow a sequence of rules and eventually end up right back where it started, the entire support infrastructure is functionally dead.
+
+[TRANSCRIPT END]

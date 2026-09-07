@@ -1,0 +1,36 @@
+[TRANSCRIPT START]
+DATE: 2026-08-15
+LOCATION: University of Advanced Sciences, Dean's Office
+PARTICIPANTS: 
+- DR. HELEN CHO (Dean of Graduate Studies)
+- ROBERT VANCE (Director of Academic Logistics)
+
+CHO: Robert, the fall semester starts in two weeks, and our incoming cohort of doctoral candidates still hasn't been assigned to their faculty advisors. I was looking at the preliminary report your team sent over, and I am incredibly confused. Why are there calculations for the "shortest academic path" and the "minimum spanning tree of the curriculum" in this document? 
+
+VANCE: Well, Dean Cho, the logistics team was trying to optimize the graduation rate. They thought that if they could just map out the absolute shortest path of prerequisite courses for each student, they could push them through the program faster. They even factored in the exact tuition fees per credit hour and the physical distance between the lecture halls to try and create this massive, optimized spanning tree that connects all the departments with the least amount of friction. 
+
+CHO: That is entirely the wrong approach. While it might seem like our primary goal should be to find the cheapest, shortest route to a degree for these students, or to minimize their total tuition expenditure, that has absolutely nothing to do with advisor assignment. 
+
+VANCE: They assumed minimizing time-to-degree was the core metric.
+
+CHO: It's a completely misguided metric for this specific problem. A doctoral student cannot simply be assigned to the faculty member whose office is closest to their dorm, or to the professor who teaches the cheapest elective. This isn't a routing problem. The relationship between a doctoral candidate and a principal investigator is strictly dictated by highly specialized research interests. 
+
+VANCE: Right, the research alignment matrix.
+
+CHO: Exactly. We have two entirely separate populations here. On one side, we have fifty incoming graduate students, each with a very specific, narrow research proposal. On the other side, we have forty available faculty members, each with their own specialized labs and funding grants. A student can only be paired with a professor if their research interests directly overlap. 
+
+VANCE: And some of our more interdisciplinary professors could potentially advise several different students from the pool, while some of the more niche students might only have one viable professor in the entire university. 
+
+CHO: Correct. But here is the hard constraint, Robert: the faculty union contract stipulates that a professor can only take on exactly one new doctoral student this year. And obviously, a student can only have one primary advisor. It must be a strict, exclusive relationship. 
+
+VANCE: So, we need to untangle the overlap.
+
+CHO: Yes. We are NOT trying to find the shortest path through the curriculum. We are NOT trying to connect the departments with a minimum spanning tree, and we are NOT trying to minimize tuition costs. 
+
+VANCE: Understood. 
+
+CHO: I need your algorithm to look at the compatibility web between the student group and the faculty group. I don't care how you do it, but the final output must be a master assignment list. Your sole objective is to calculate the absolute maximum number of valid, one-to-one pairings that can be made between these two distinct groups. You need to resolve the overlapping compatibilities in a way that results in the largest possible set of disjoint student-advisor matches, ensuring the maximum number of students are successfully placed without violating the exclusive assignment rule. 
+
+VANCE: We'll re-run the numbers today, Dean. 
+
+[TRANSCRIPT END]

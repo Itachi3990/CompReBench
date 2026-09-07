@@ -1,6 +1,10 @@
 __pycache__/
-Graph/prompt_copy_pasted.txt
-Graph/prompt_copy_pasted_checker.py
 Graph/prompt_generation_progress.json
-Graph/llm_log.txt
+Graph/llm_log_problem.txt
+Graph/llm_log_problem.csv
+Graph/llm_log_structure.txt
+Graph/llm_log_structure.csv
 Graph/.venv
+Graph/I have a plan/
+Graph/progress_structure.json
+Graph/progress_problem.json

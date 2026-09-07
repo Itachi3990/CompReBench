@@ -1,0 +1,32 @@
+[TRANSCRIPT START]
+DATE: Standard Galactic Year 349.12
+LOCATION: Galactic Senate, Committee on Infrastructure
+PARTICIPANTS: 
+- SENATOR VRAX (Representative of the Core Worlds)
+- COMMANDER JENSEN (Head of the Astrogation Guild)
+
+VRAX: Commander Jensen, the Senate is demanding an explanation for the delays in the Outer Rim Integration Project. We have seventy newly discovered inhabited worlds out there, and they are completely isolated. Last month, your guild submitted a budget requesting funds for an "all pairs shortest path matrix." You wanted to build direct, high-speed hyperspace lanes from every single new world to every other new world in the sector. 
+
+JENSEN: Senator, the initial proposal was drafted by our theoretical astrometrics division. They were operating under the assumption that we needed to calculate the exact, lowest latency travel time between all possible origin and destination points simultaneously. They factored in precise lightyear distances, the mass of the diplomatic cruisers, and subspace drag coefficients. They believed that establishing an all-to-all communication grid was the only way to ensure political stability.
+
+VRAX: And the cost for that grid was more than the GDP of the entire Core Sector! We also saw a proposal from the Trade Federation advocating for the "maximum flow of diplomatic envoys." They wanted us to build massive, multi-lane subspace conduits capable of handling thousands of heavy freighters at once, treating diplomacy like a bulk cargo hauling operation. 
+
+JENSEN: Yes, they were focused on throughput capacity rather than practical connectivity. Both of those proposals have been scrapped, Senator. We understand the budget constraints. 
+
+VRAX: Good. Because while it might seem like the Senate wants the absolute fastest travel times between all worlds, or the maximum possible volume of trade traffic, the reality is far more austere. We just need to bring them into the fold. They need to be connected to the central beacon network. 
+
+JENSEN: We have mapped out all the gravitationally stable routes where hyperspace beacons can theoretically be placed between these seventy worlds. Each potential route has a very specific maintenance cost based on local dark matter density and stellar radiation. 
+
+VRAX: The mandate is this, Commander: Every single one of those seventy worlds must be integrated. A signal must be able to travel from any world in the new sector to any other world. But the Senate will only authorize the absolute bare minimum funding necessary to achieve this. 
+
+JENSEN: Which means a strict policy of zero redundancy. 
+
+VRAX: Exactly. If World A can route a message to World B through World C, you are forbidden from building a direct, expensive beacon link between A and B. We are not paying for backup routes. We are not paying for circular loops in the network. The structure must be as fragile and sparse as physically possible while still maintaining full connectivity. 
+
+JENSEN: Understood, Senator. So, for the record: We are NOT calculating an all pairs shortest path matrix. We are NOT trying to maximize the flow of cargo or envoys, and we are NOT attempting to build a robust, highly redundant hyperspace grid. 
+
+VRAX: Correct. Your only job is to analyze the maintenance costs of all the potential beacon routes and select the exact combination that links all seventy worlds together into one continuous, non-circular network, ensuring that the total, cumulative cost of maintaining those specific beacons is the absolute lowest number mathematically possible. 
+
+JENSEN: My navigators will begin the calculations immediately. 
+
+[TRANSCRIPT END]
