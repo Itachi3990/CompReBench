@@ -37,9 +37,9 @@ NUMBER_OF_PROMPTS_PER_GRAPH = 3 # the LLM or SLM will be tested with the exact s
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DIRECTED_GRAPHS_BASE = os.path.join(BASE_DIR, "graph_samples", "directed")
 UNDIRECTED_GRAPHS_BASE = os.path.join(BASE_DIR, "graph_samples", "undirected")
-LLM_LOG_FILE = os.path.join(BASE_DIR, "llm_log_structure.txt")
-LLM_CSV_LOG_FILE = os.path.join(BASE_DIR, "llm_log_structure.csv")
-PROGRESS_FILE = os.path.join(BASE_DIR, "progress_structure.json")
+LLM_LOG_FILE = os.path.join(BASE_DIR, LM_STUDIO_MODEL, "llm_log_structure.txt")
+LLM_CSV_LOG_FILE = os.path.join(BASE_DIR, LM_STUDIO_MODEL, "llm_log_structure.csv")
+PROGRESS_FILE = os.path.join(BASE_DIR, LM_STUDIO_MODEL, "progress_structure.json")
 
 # ============================================================================
 # LLM / SLM INFERENCE HELPER
@@ -70,8 +70,7 @@ def call_model(prompt: str) -> str:
         import subprocess
         result = subprocess.run(
             [
-                r"C:\Users\ASUS\AppData\Local\agy\bin\agy.exe",
-                "--model",
+                "agy --model",
                 "gemini-3.8-flash-high",
                 "-p",
                 prompt,
@@ -356,9 +355,9 @@ def graph_metadata_matches(response, graph):
 # MAIN EXECUTION
 # ============================================================================
 
-def main():
+def run_slm_inference():
     print("="*80)
-    print("GRAPH STRUCTURE TESTER")
+    print("GRAPH STRUCTURE TESTER - SLM INFERENCE")
     print("="*80)
     
     progress_file_path = PROGRESS_FILE
@@ -373,16 +372,6 @@ def main():
             
     if state:
         combinations = state.get("combinations", [])
-        stats = state.get("stats", {
-            'total': 0,
-            'adjacency_correct': 0,
-            'adjacency_wrong': 0,
-            'adjacency_error': 0,
-            'metadata_correct': 0,
-            'metadata_wrong': 0,
-            'metadata_error': 0,
-        })
-        stats.setdefault('failed_adjacency_matrices', [])
         start_idx = state.get("next_idx", 0)
         
         save_to_log("="*80 + "\n")
@@ -441,16 +430,6 @@ def main():
             )
             print(f"  Limited to: {len(combinations)} graphs")
             
-        stats = {
-            'total': 0,
-            'adjacency_correct': 0,
-            'adjacency_wrong': 0,
-            'adjacency_error': 0,
-            'metadata_correct': 0,
-            'metadata_wrong': 0,
-            'metadata_error': 0,
-            'failed_adjacency_matrices': [],
-        }
         start_idx = 0
         
     print("\n[STEP 2] Processing graphs...\n")
@@ -461,13 +440,11 @@ def main():
         base_dir = combo['base_dir']
         
         graph_filepath = os.path.join(base_dir, graph_folder, f"graph_{graph_folder}.txt")
-        matrix_filepath = os.path.join(base_dir, graph_folder, f"adjacency_matrix_{graph_folder}.txt")
         
         print(f"[{idx}/{len(combinations)}] {graph_type}/{graph_folder}")
         
         graph = Graph.from_file(graph_filepath, directed=(graph_type == "directed"))
         graph_description = graph_to_description(graph)
-        expected_matrix = graph.get_adjacency_matrix()
         
         if not graph_description:
             print(f"  ❌ ERROR: Failed to load graph")
@@ -479,11 +456,10 @@ def main():
             graph_description=graph_description,
         )
 
-        print(prompt) # just print the raw prompt that is being fed to the model.
+        print(prompt) # just print the raw prompt
         
         for attempt in range(1, NUMBER_OF_PROMPTS_PER_GRAPH + 1):
             print(f"\n--- Attempt {attempt} ---")
-            stats['total'] += 1
             start_time = time.time()
             response = call_model(prompt)
             end_time = time.time()
@@ -492,51 +468,7 @@ def main():
             print("LLM's Complete, Unedited Response:", response)
             print("-" * 80)
 
-            extracted_matrix = extract_adjacency_matrix_from_response(response)
-
-            if expected_matrix is None:
-                print(f"  ❌ ERROR: Expected matrix file not found")
-                save_to_log(f"\n[{idx} - Attempt {attempt}] {graph_type}/{graph_folder}")
-                save_to_log(f"  ADJACENCY MATRIX: ❌ ERROR (expected file missing)\n")
-                stats['adjacency_error'] += 1
-            elif extracted_matrix is None:
-                print(f"  ❌ WRONG ADJACENCY MATRIX (extraction failed)")
-                print(f"     LLM adjacency matrix: {extracted_matrix}")
-                print(f"     Expected adjacency matrix: {matrix_to_string(expected_matrix)}")
-                save_to_log(f"\n[{idx} - Attempt {attempt}] {graph_type}/{graph_folder}")
-                save_to_log(f"  ADJACENCY MATRIX: ❌ WRONG (extraction failed)\n")
-                save_to_log(f"  LLM adjacency matrix: {extracted_matrix}\n")
-                save_to_log(f"  Expected adjacency matrix: {matrix_to_string(expected_matrix)}\n")
-                stats['adjacency_wrong'] += 1
-                stats['failed_adjacency_matrices'].append(f"{graph_type}/{graph_folder}")
-            elif graph.adjacency_matrix_matches(extracted_matrix):
-                print(f"  ✅ CORRECT ADJACENCY MATRIX")
-                save_to_log(f"\n[{idx} - Attempt {attempt}] {graph_type}/{graph_folder}")
-                save_to_log(f"  ADJACENCY MATRIX: ✅ CORRECT\n")
-                save_to_log(f"  LLM adjacency matrix: {matrix_to_string(extracted_matrix)}\n")
-                stats['adjacency_correct'] += 1
-            else:
-                print(f"  ❌ WRONG ADJACENCY MATRIX")
-                print(f"     LLM adjacency matrix: {matrix_to_string(extracted_matrix)}")
-                print(f"     Expected adjacency matrix: {matrix_to_string(expected_matrix)}")
-                save_to_log(f"\n[{idx} - Attempt {attempt}] {graph_type}/{graph_folder}")
-                save_to_log(f"  ADJACENCY MATRIX: ❌ WRONG\n")
-                save_to_log(f"  LLM adjacency matrix: {matrix_to_string(extracted_matrix)}\n")
-                save_to_log(f"  Expected adjacency matrix: {matrix_to_string(expected_matrix)}\n")
-                stats['adjacency_wrong'] += 1
-
-            metadata_ok, extracted_metadata, expected_metadata, reason = graph_metadata_matches(response, graph)
-            if metadata_ok:
-                print(f"  ✅ CORRECT GRAPH METADATA")
-                save_to_log(f"  GRAPH METADATA: ✅ CORRECT\n")
-                save_to_log(f"  LLM metadata: {extracted_metadata}\n")
-                stats['metadata_correct'] += 1
-            else:
-                print(f"  ❌ WRONG GRAPH METADATA ({reason})")
-                save_to_log(f"  GRAPH METADATA: ❌ WRONG ({reason})\n")
-                save_to_log(f"  LLM metadata: {extracted_metadata}\n")
-                save_to_log(f"  Expected metadata: {expected_metadata}\n")
-                stats['metadata_wrong'] += 1
+            save_to_log(f"\\n[{idx} - Attempt {attempt}] {graph_type}/{graph_folder}")
 
             csv_row = {
                 "Attempt": attempt,
@@ -545,16 +477,16 @@ def main():
                 "Execution Time (s)": duration,
                 "Number of Nodes": len(graph.vertices),
                 "Number of Edges": len(graph.edges),
-                "Adjacency Match": graph.adjacency_matrix_matches(extracted_matrix) if extracted_matrix is not None else False,
-                "Adjacency Error": expected_matrix is None or extracted_matrix is None,
-                "Adjacency Entry Match Score": graph.get_adjacency_matrix_entry_score(extracted_matrix) if extracted_matrix is not None else 0.0,
-                "Adjacency Row Match Score": graph.get_adjacency_matrix_row_score(extracted_matrix) if extracted_matrix is not None else 0.0,
-                "LLM Adjacency Matrix": matrix_to_string(extracted_matrix),
-                "Expected Adjacency Matrix": matrix_to_string(expected_matrix),
-                "Metadata Match": metadata_ok,
-                "LLM Metadata": json.dumps(extracted_metadata) if extracted_metadata else "",
-                "Expected Metadata": json.dumps(expected_metadata) if expected_metadata else "",
-                "Metadata Error Reason": reason if not metadata_ok else "",
+                "Adjacency Match": "",
+                "Adjacency Error": "",
+                "Adjacency Entry Match Score": "",
+                "Adjacency Row Match Score": "",
+                "LLM Adjacency Matrix": "",
+                "Expected Adjacency Matrix": "",
+                "Metadata Match": "",
+                "LLM Metadata": "",
+                "Expected Metadata": "",
+                "Metadata Error Reason": "",
                 "Prompt Length (chars)": len(prompt),
                 "Response Length (chars)": len(response),
                 "Raw Response": response
@@ -562,19 +494,129 @@ def main():
             fieldnames = list(csv_row.keys())
             log_to_csv(LLM_CSV_LOG_FILE, csv_row, fieldnames)
 
-            print(f"    Adj Matrix Accuracy: {stats['adjacency_correct']}/{stats['total']} ({100*stats['adjacency_correct']//stats['total']}%)")
-            print(f"    Metadata Accuracy:   {stats['metadata_correct']}/{stats['total']} ({100*stats['metadata_correct']//stats['total']}%)")
-            print()
-
-
         state_to_save = {
             "combinations": combinations,
-            "stats": stats,
             "next_idx": idx
         }
         with open(PROGRESS_FILE, "w", encoding="utf-8") as f:
             json.dump(state_to_save, f, indent=4)
     
+    if os.path.exists(PROGRESS_FILE):
+        os.remove(PROGRESS_FILE)
+    print("\n✅ SLM Inference completed.")
+
+
+def run_graph_structure_judge():
+    print("="*80)
+    print("GRAPH STRUCTURE JUDGE")
+    print("="*80)
+    
+    import pandas as pd
+    
+    if not os.path.exists(LLM_CSV_LOG_FILE):
+        print(f"❌ CSV log file not found at {LLM_CSV_LOG_FILE}. Run slm inference first.")
+        return
+        
+    df = pd.read_csv(LLM_CSV_LOG_FILE)
+    
+    # Ensure columns exist
+    for col in ["Adjacency Match", "Adjacency Error", "Adjacency Entry Match Score", "Adjacency Row Match Score", 
+                "LLM Adjacency Matrix", "Expected Adjacency Matrix", "Metadata Match", "LLM Metadata", 
+                "Expected Metadata", "Metadata Error Reason"]:
+        if col not in df.columns:
+            df[col] = pd.Series(dtype='object')
+            
+    stats = {
+        'total': 0,
+        'adjacency_correct': 0,
+        'adjacency_wrong': 0,
+        'adjacency_error': 0,
+        'metadata_correct': 0,
+        'metadata_wrong': 0,
+        'metadata_error': 0,
+        'failed_adjacency_matrices': [],
+    }
+    
+    total_rows = len(df)
+    
+    for index, row in df.iterrows():
+        stats['total'] += 1
+        
+        current_match = row.get('Metadata Match', None)
+        if pd.notna(current_match) and str(current_match).strip() != "":
+            # Existing score found
+            try:
+                if str(row.get('Adjacency Match', '')).lower() == 'true':
+                    stats['adjacency_correct'] += 1
+                elif str(row.get('Adjacency Error', '')).lower() == 'true':
+                    stats['adjacency_error'] += 1
+                else:
+                    stats['adjacency_wrong'] += 1
+                    
+                if str(row.get('Metadata Match', '')).lower() == 'true':
+                    stats['metadata_correct'] += 1
+                elif str(row.get('Metadata Match', '')).lower() == 'false':
+                    stats['metadata_wrong'] += 1
+                else:
+                    stats['metadata_error'] += 1
+            except:
+                pass
+            continue
+            
+        print(f"Judging row {index+1}/{total_rows}: {row['Graph Type']}/{row['Graph Folder']} Attempt {row['Attempt']}")
+        
+        graph_type = row['Graph Type']
+        graph_folder = row['Graph Folder']
+        base_dir = DIRECTED_GRAPHS_BASE if graph_type == 'directed' else UNDIRECTED_GRAPHS_BASE
+        graph_filepath = os.path.join(base_dir, graph_folder, f"graph_{graph_folder}.txt")
+        
+        try:
+            graph = Graph.from_file(graph_filepath, directed=(graph_type == "directed"))
+        except Exception as e:
+            print(f"  ❌ ERROR loading graph: {e}")
+            stats['metadata_error'] += 1
+            stats['adjacency_error'] += 1
+            continue
+
+        expected_matrix = graph.get_adjacency_matrix()
+        response = row['Raw Response']
+        
+        extracted_matrix = extract_adjacency_matrix_from_response(response)
+        
+        adjacency_match = False
+        adjacency_error = False
+        if expected_matrix is None:
+            adjacency_error = True
+            stats['adjacency_error'] += 1
+        elif extracted_matrix is None:
+            stats['adjacency_wrong'] += 1
+            stats['failed_adjacency_matrices'].append(f"{graph_type}/{graph_folder}")
+        elif graph.adjacency_matrix_matches(extracted_matrix):
+            adjacency_match = True
+            stats['adjacency_correct'] += 1
+        else:
+            stats['adjacency_wrong'] += 1
+
+        df.at[index, 'Adjacency Match'] = adjacency_match
+        df.at[index, 'Adjacency Error'] = adjacency_error
+        df.at[index, 'Adjacency Entry Match Score'] = graph.get_adjacency_matrix_entry_score(extracted_matrix) if extracted_matrix is not None else 0.0
+        df.at[index, 'Adjacency Row Match Score'] = graph.get_adjacency_matrix_row_score(extracted_matrix) if extracted_matrix is not None else 0.0
+        df.at[index, 'LLM Adjacency Matrix'] = matrix_to_string(extracted_matrix)
+        df.at[index, 'Expected Adjacency Matrix'] = matrix_to_string(expected_matrix)
+
+        metadata_ok, extracted_metadata, expected_metadata, reason = graph_metadata_matches(response, graph)
+        if metadata_ok:
+            stats['metadata_correct'] += 1
+        else:
+            stats['metadata_wrong'] += 1
+
+        df.at[index, 'Metadata Match'] = metadata_ok
+        df.at[index, 'LLM Metadata'] = json.dumps(extracted_metadata) if extracted_metadata else ""
+        df.at[index, 'Expected Metadata'] = json.dumps(expected_metadata) if expected_metadata else ""
+        df.at[index, 'Metadata Error Reason'] = reason if not metadata_ok else ""
+        
+        df.to_csv(LLM_CSV_LOG_FILE, index=False)
+
     print("\n" + "="*80)
     print("FINAL STATISTICS")
     print("="*80)
@@ -606,8 +648,7 @@ GRAPH METADATA:
     print(f"\nLog file: {LLM_LOG_FILE}")
     save_to_log(f"\n{'='*80}\n")
     
-    if os.path.exists(PROGRESS_FILE):
-        os.remove(PROGRESS_FILE)
-
 if __name__ == "__main__":
-    main()
+    # Comment out either function as needed
+    run_slm_inference()
+    run_graph_structure_judge()

@@ -5,6 +5,7 @@ import json
 import sys
 import csv
 import time
+import pandas as pd
 
 # Fix stdout encoding for printing emojis on Windows
 if sys.stdout.encoding != 'utf-8':
@@ -20,7 +21,7 @@ random = random.SystemRandom()
 # Model configuration
 USE_SLM = True  # Set to True to use local SLM (via LM Studio), False to use Gemini via agy CLI
 LM_STUDIO_URL = "http://127.0.0.1:1234/v1/chat/completions"
-LM_STUDIO_MODEL = "google/gemma-3-4b"
+LM_STUDIO_MODEL = "qwen/qwen3-4b-thinking-2507"
 SLM_TEMPERATURE = 0.3
 
 LLM = "gemini-3.8-flash-high"
@@ -37,9 +38,9 @@ PROBLEM_TYPE_FILTER = 'all'
 # Base directories
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROBLEMS_BASE = os.path.join(BASE_DIR, "Problems")
-LLM_LOG_FILE = os.path.join(BASE_DIR, "llm_log_problem.txt")
-LLM_CSV_LOG_FILE = os.path.join(BASE_DIR, "llm_log_problem.csv")
-PROGRESS_FILE = os.path.join(BASE_DIR, "progress_problem.json")
+LLM_LOG_FILE = os.path.join(BASE_DIR, LM_STUDIO_MODEL, "llm_log_problem.txt")
+LLM_CSV_LOG_FILE = os.path.join(BASE_DIR, LM_STUDIO_MODEL, "llm_log_problem.csv")
+PROGRESS_FILE = os.path.join(BASE_DIR, LM_STUDIO_MODEL, "progress_problem.json")
 
 # ============================================================================
 # LLM / SLM INFERENCE HELPER
@@ -61,7 +62,7 @@ def call_model(prompt: str) -> str:
                 "temperature": SLM_TEMPERATURE,
                 "seed": random.randint(1, 10000000),
             },
-            timeout=300,
+            timeout=600,
         )
         response.raise_for_status()
         return response.json()["choices"][0]["message"]["content"].strip()
@@ -69,8 +70,7 @@ def call_model(prompt: str) -> str:
         import subprocess
         result = subprocess.run(
             [
-                r"C:\Users\ASUS\AppData\Local\agy\bin\agy.exe",
-                "--model",
+                "agy --model",
                 LLM,
                 "-p",
                 prompt,
@@ -262,14 +262,14 @@ Reply ONLY with a valid JSON object in the following format. Do not include mark
     try:
         result = subprocess.run(
             [
-                r"C:\Users\ASUS\AppData\Local\agy\bin\agy.exe",
-                "--model",
+                "agy --model",
                 "gemini-3.8-flash-high",
                 "-p",
                 prompt,
             ],
             capture_output=True,
             text=True,
+            timeout=120,
         )
         response = result.stdout.strip()
         if response.startswith("```json"):
@@ -289,9 +289,9 @@ Reply ONLY with a valid JSON object in the following format. Do not include mark
 # MAIN EXECUTION
 # ============================================================================
 
-def main():
+def run_slm_inference():
     print("="*80)
-    print("PROBLEM SCENARIO TESTER")
+    print("PROBLEM SCENARIO TESTER - SLM INFERENCE")
     print("="*80)
     
     progress_file_path = PROGRESS_FILE
@@ -306,12 +306,6 @@ def main():
             
     if state:
         combinations = state.get("combinations", [])
-        stats = state.get("stats", {
-            'total': 0,
-            'algorithm_correct': 0,
-            'algorithm_wrong': 0,
-            'algorithm_error': 0,
-        })
         start_idx = state.get("next_idx", 0)
         
         save_to_log("="*80 + "\n")
@@ -372,14 +366,6 @@ def main():
             )
             print(f"  Limited to: {len(combinations)} combinations")
             
-        stats = {
-            'total': 0,
-            'perfect_matches': 0, # Score == 100
-            'partial_matches': 0, # 0 < Score < 100
-            'misses': 0,          # Score == 0
-            'total_score': 0.0,   # Accumulate all scores for average
-            'algorithm_error': 0,
-        }
         start_idx = 0
         
     print("\n[STEP 2] Processing problems...\n")
@@ -408,7 +394,6 @@ def main():
         
         for attempt in range(1, NUMBER_OF_PROMPTS_PER_PROBLEM_SCENARIO + 1):
             print(f"\n--- Attempt {attempt} ---")
-            stats['total'] += 1
             start_time = time.time()
             response = call_model(prompt)
             end_time = time.time()
@@ -419,32 +404,11 @@ def main():
 
             extracted_algo = extract_algorithm_from_response(response)
             extracted_explanation = extract_explanation_from_response(response)
-
-            match = False
-            matched_name = ""
             valid_algos_for_category = GRAPH_ALGORITHMS.get(problem_category, [])
 
-            score, matched_name, justification = grade_algorithm_choice(extracted_algo, extracted_explanation, problem_category)
-            
-            # Update comprehensive stats tracking
-            stats['total_score'] += score
-            if score == 100:
-                stats['perfect_matches'] += 1
-            elif score > 0:
-                stats['partial_matches'] += 1
-            else:
-                stats['misses'] += 1
-                
-            print(f"  => Score: {score} | Matched: {matched_name}")
-            print(f"  => Justification: {justification}")
-            
             save_to_log(f"\\n[{idx} - Attempt {attempt}] {problem_category}/{problem_name}")
-            save_to_log(f"  ALGORITHM CHOICE SCORE: {score}\\n")
             save_to_log(f"  LLM choice: {extracted_algo}\\n")
-            save_to_log(f"  Closest match: {matched_name}\\n")
-            save_to_log(f"  Justification: {justification}\\n")
             save_to_log(f"  Valid algorithms: {valid_algos_for_category}\\n")
-
 
             csv_row = {
                 "Attempt": attempt,
@@ -455,28 +419,123 @@ def main():
                 "LLM Algorithm Choice": extracted_algo if extracted_algo else "",
                 "Valid Algorithms": json.dumps(valid_algos_for_category),
                 "LLM Explanation": extracted_explanation if extracted_explanation else "",
-                "Algorithm Match Score": score,
-                "Matched Algorithm Name": matched_name if matched_name else "",
-                "Judge Justification": justification,          "Prompt Length (chars)": len(prompt),
+                "Algorithm Match Score": "",
+                "Matched Algorithm Name": "",
+                "Judge Justification": "",
+                "Prompt Length (chars)": len(prompt),
                 "Response Length (chars)": len(response),
                 "Raw Response": response
             }
             fieldnames = list(csv_row.keys())
             log_to_csv(LLM_CSV_LOG_FILE, csv_row, fieldnames)
 
-            avg_score = stats['total_score'] / stats['total'] if stats['total'] > 0 else 0
-            print(f"    Average Score: {avg_score:.2f} | Perfects: {stats['perfect_matches']} | Partials: {stats['partial_matches']} | Misses: {stats['misses']}")
-            print()
-
-
         state_to_save = {
             "combinations": combinations,
-            "stats": stats,
             "next_idx": idx
         }
         with open(PROGRESS_FILE, "w", encoding="utf-8") as f:
             json.dump(state_to_save, f, indent=4)
+            
+    if os.path.exists(PROGRESS_FILE):
+        os.remove(PROGRESS_FILE)
+    print("\n✅ SLM Inference completed.")
+
+
+def run_llm_as_a_judge():
+    print("="*80)
+    print("PROBLEM SCENARIO TESTER - LLM JUDGE")
+    print("="*80)
     
+    if not os.path.exists(LLM_CSV_LOG_FILE):
+        print(f"❌ CSV log file not found at {LLM_CSV_LOG_FILE}. Run slm inference first.")
+        return
+        
+    df = pd.read_csv(LLM_CSV_LOG_FILE)
+    
+    # We will score rows that don't have a valid score
+    # First ensure the columns exist
+    if 'Algorithm Match Score' not in df.columns:
+        df['Algorithm Match Score'] = pd.Series(dtype='object')
+        df['Matched Algorithm Name'] = pd.Series(dtype='object')
+        df['Judge Justification'] = pd.Series(dtype='object')
+        
+    failed_attempts = {} # index -> failure_count
+    
+    total_rows = len(df)
+    
+    while True:
+        rows_to_judge = []
+        for index, row in df.iterrows():
+            current_score = row.get('Algorithm Match Score', None)
+            justification = str(row.get('Judge Justification', '')).strip()
+            
+            if pd.isna(current_score) or str(current_score).strip() == "" or justification == "LLM Judge Failed":
+                rows_to_judge.append(index)
+                
+        if not rows_to_judge:
+            break
+            
+        print(f"\n--- Judging Round ({len(rows_to_judge)} rows to process) ---")
+        round_had_failures = False
+        
+        for index in rows_to_judge:
+            row = df.loc[index]
+            print(f"Judging row {index+1}/{total_rows}: {row['Problem Category']}/{row['Problem Name']} Attempt {row['Attempt']}")
+            
+            problem_category = row['Problem Category']
+            extracted_algo = row['LLM Algorithm Choice'] if pd.notna(row['LLM Algorithm Choice']) else ""
+            extracted_explanation = row['LLM Explanation'] if pd.notna(row['LLM Explanation']) else ""
+            
+            score, matched_name, justification = grade_algorithm_choice(extracted_algo, extracted_explanation, problem_category)
+            
+            df.at[index, 'Algorithm Match Score'] = score
+            df.at[index, 'Matched Algorithm Name'] = matched_name if matched_name else ""
+            df.at[index, 'Judge Justification'] = justification if justification else ""
+            
+            if justification == "LLM Judge Failed":
+                round_had_failures = True
+                count = failed_attempts.get(index, 0)
+                if count == 2:
+                    df.to_csv(LLM_CSV_LOG_FILE, index=False)
+                    raise RuntimeError(f"Row {index+1} ({row['Problem Name']}) failed LLM judge 3 times. Aborting.")
+                failed_attempts[index] = count + 1
+                print(f"  ❌ LLM Judge Failed! Failure count: {failed_attempts[index]}")
+            else:
+                if index in failed_attempts:
+                    del failed_attempts[index]
+                print(f"  => Score: {score} | Matched: {matched_name}")
+                print(f"  => Justification: {justification}\n")
+                
+            # Save incrementally
+            df.to_csv(LLM_CSV_LOG_FILE, index=False)
+            
+        if not round_had_failures:
+            break
+            
+    stats = {
+        'total': 0,
+        'perfect_matches': 0, # Score == 100
+        'partial_matches': 0, # 0 < Score < 100
+        'misses': 0,          # Score == 0
+        'total_score': 0.0,   # Accumulate all scores for average
+    }
+    
+    for index, row in df.iterrows():
+        stats['total'] += 1
+        current_score = row.get('Algorithm Match Score', None)
+        if pd.notna(current_score) and str(current_score).strip() != "":
+            try:
+                score = int(float(current_score))
+                stats['total_score'] += score
+                if score == 100:
+                    stats['perfect_matches'] += 1
+                elif score > 0:
+                    stats['partial_matches'] += 1
+                else:
+                    stats['misses'] += 1
+            except ValueError:
+                pass
+
     print("\n" + "="*80)
     print("FINAL STATISTICS")
     print("="*80)
@@ -500,8 +559,7 @@ GRADED ALGORITHM CHOICE METRICS:
     print(f"\nLog file: {LLM_LOG_FILE}")
     save_to_log(f"\n{'='*80}\n")
     
-    if os.path.exists(PROGRESS_FILE):
-        os.remove(PROGRESS_FILE)
-
 if __name__ == "__main__":
-    main()
+    # Comment out either function as needed
+    run_slm_inference()
+    run_llm_as_a_judge()
