@@ -118,6 +118,75 @@ class Graph:
                 return True
         return False
 
+    def is_dense(self) -> bool:
+        """
+        Return True if the graph is dense, otherwise False.
+
+        Density is defined as:
+
+            undirected:
+                m / [n(n-1)/2]
+
+            directed:
+                m / [n(n-1)]
+
+        where:
+            n = number of vertices
+            m = number of unique non-self-loop edges
+
+        A graph is considered dense when its density is at least 50%.
+        Graphs with fewer than 2 vertices are considered sparse because
+        density is not meaningfully defined for them.
+
+        Self-loops are ignored when calculating density because the maximum
+        possible edge counts above assume that self-loops are not allowed.
+        """
+
+        n = len(self._vertices)
+
+        # Density is not meaningful for 0 or 1 vertex.
+        if n < 2:
+            return False
+
+        # Count unique non-self-loop edges directly from the adjacency map.
+        # The inner dictionaries map:
+        #     neighbor -> weight
+        #
+        # This means duplicate insertions of the same edge should already
+        # collapse to one adjacency entry.
+        if self._directed:
+            m = sum(
+                1
+                for u, neighbors in self._adjacency.items()
+                for v in neighbors
+                if u != v
+            )
+
+            max_edges = n * (n - 1)
+
+        else:
+            # In a properly represented undirected graph, every edge appears
+            # twice in the adjacency structure:
+            #
+            #     u -> v
+            #     v -> u
+            #
+            # Count non-self-loop adjacency entries and divide by 2.
+            m = sum(
+                1
+                for u, neighbors in self._adjacency.items()
+                for v in neighbors
+                if u != v
+            ) // 2
+
+            max_edges = n * (n - 1) // 2
+
+        density = m / max_edges
+
+        # Standard, simple interpretation:
+        # at least half of all possible edges => dense.
+        return density >= 0.50
+
     def adjacency_matrix_matches(self, other_matrix: List[List[int]]) -> bool:
         expected = self.get_adjacency_matrix()
         if expected is None or other_matrix is None:
@@ -251,3 +320,149 @@ class Graph:
             weight = int(tokens[2]) if len(tokens) >= 3 else 1
             graph.add_edge(u, v, weight)
         return graph
+
+    def twinport_description(self):
+        """
+        Build a TWINPORT-encoded graph description (Vanilla Twin-Port).
+
+        This version of TWINPORT keeps the Twin-Port Edge Tickets and Local Incidence 
+        Ledgers, but drops the ECC-Anchor Node Encoding in favor of using the original 
+        node names. This allows deterministic extraction and evaluation of the adjacency 
+        matrix by the LLM.
+
+        1. Twin-Port Edge Tickets: every edge is expressed as two endpoint-local port
+           addresses (half-edges). This turns each edge into an explicitly addressable
+           incidence object, enabling pointer-like multi-hop traversal.
+
+        2. Local Incidence Ledger: every node gets a per-port listing that shows 
+           which edge ticket arrives or departs at each port, creating a redundant 
+           but internally checkable graph representation.
+        """
+        vertices = sorted(self.vertices, key=Graph._natural_sort_key)
+        graph_type = "DIRECTED" if self.directed else "UNDIRECTED"
+        num_edges = self.get_number_of_edges()
+
+        # ── Step 1: assign random topology-independent port numbers ───────────────
+        port_counter = {v: 1 for v in vertices}
+        edge_tickets = []
+        ledger = {v: [] for v in vertices}
+        seen_undirected = set()
+
+        edge_num = 1
+        for u in vertices:
+            neighbors = sorted(self.adjacency.get(u, {}).items(),
+                               key=lambda kv: Graph._natural_sort_key(kv[0]))
+            for v, weight in neighbors:
+                if not self.directed:
+                    pair = tuple(sorted((u, v), key=Graph._natural_sort_key))
+                    if pair in seen_undirected:
+                        continue
+                    seen_undirected.add(pair)
+
+                # Assign local port numbers
+                port_u = port_counter[u]
+                port_counter[u] += 1
+                port_v = port_counter[v]
+                port_counter[v] += 1
+
+                edge_id = f"E{edge_num:02d}"
+                edge_num += 1
+
+                w_str = f"+{weight:.3f}" if weight >= 0 else f"{weight:.3f}"
+
+                if self.directed:
+                    ticket = (
+                        f"EDGE: {edge_id}  "
+                        f"TAIL_NODE: {u}  TAIL_PORT: p{port_u:02d}  "
+                        f"HEAD_NODE: {v}  HEAD_PORT: p{port_v:02d}  "
+                        f"WEIGHT: {w_str}"
+                    )
+                    ledger[u].append(f"  OUT p{port_u:02d} -> {v}  [{edge_id}]")
+                    ledger[v].append(f"  IN  p{port_v:02d} <- {u}  [{edge_id}]")
+                else:
+                    ticket = (
+                        f"EDGE: {edge_id}  "
+                        f"NODE1: {u}  PORT1: p{port_u:02d}  "
+                        f"NODE2: {v}  PORT2: p{port_v:02d}  "
+                        f"WEIGHT: {w_str}"
+                    )
+                    ledger[u].append(f"  UNDIR p{port_u:02d} <-> {v}  [{edge_id}]")
+                    ledger[v].append(f"  UNDIR p{port_v:02d} <-> {u}  [{edge_id}]")
+
+                edge_tickets.append(ticket)
+
+        # ── Step 2: assemble the output string ────────────────────────────────────
+        lines = []
+        lines.append(f"GRAPH TYPE: {graph_type}")
+        lines.append(f"NODES: {len(vertices)}")
+        lines.append(f"EDGES: {num_edges}")
+        lines.append("")
+        lines.append("EDGE TICKETS:")
+        for ticket in edge_tickets:
+            lines.append(f"  {ticket}")
+        lines.append("")
+        lines.append("INCIDENCE LEDGER:")
+        for v in vertices:
+            lines.append(f"  NODE {v}")
+            if ledger[v]:
+                for entry in ledger[v]:
+                    lines.append(entry)
+            else:
+                lines.append("    (isolated)")
+        lines.append("")
+
+        return "\n".join(lines)
+
+    def incident_description(self):
+        """Build the natural-language graph description directly from a Graph object using incident encoding method."""
+        vertices = sorted(self.vertices, key=Graph._natural_sort_key)
+        graph_type = "DIRECTED" if self.directed else "UNDIRECTED"
+        vertex_word = "vertex" if len(vertices) == 1 else "vertices"
+
+        description = (
+            f"Graph: a {graph_type.lower()} weighted graph with {len(vertices)} {vertex_word}. "
+            f"The vertices are {', '.join(vertices)}.\n"
+        )
+        num_edges = self.get_number_of_edges()
+        description += f"The graph contains {num_edges} {'edge' if num_edges == 1 else 'edges'}.\n"
+        description += "Edge information:\n"
+
+        if self.directed:
+            adjacency = self.adjacency
+            for vertex in vertices:
+                outgoing = sorted(adjacency.get(vertex, {}).items(), key=lambda item: Graph._natural_sort_key(item[0]))
+                if not outgoing:
+                    description += f"- Vertex {vertex} has no outgoing edges.\n"
+                    continue
+
+                edge_descriptions = [f"{neighbor} with weight {weight}" for neighbor, weight in outgoing]
+                if len(edge_descriptions) == 1:
+                    description += f"- Vertex {vertex} has an outgoing edge to {edge_descriptions[0]}.\n"
+                else:
+                    edge_text = ", ".join(edge_descriptions[:-1]) + f", and {edge_descriptions[-1]}"
+                    description += f"- Vertex {vertex} has outgoing edges to {edge_text}.\n"
+        else:
+            seen = set()
+            neighbors = {vertex: [] for vertex in vertices}
+            for u, v, weight in self.get_edge_list():
+                pair = tuple(sorted((u, v)))
+                if pair in seen:
+                    continue
+                seen.add(pair)
+                neighbors[u].append((v, weight))
+                neighbors[v].append((u, weight))
+
+            for vertex in vertices:
+                incident = sorted(neighbors.get(vertex, []), key=lambda item: Graph._natural_sort_key(item[0]))
+                if not incident:
+                    description += f"- Vertex {vertex} is not connected to any other vertex.\n"
+                    continue
+
+                edge_descriptions = [f"{neighbor} with weight {weight}" for neighbor, weight in incident]
+                if len(edge_descriptions) == 1:
+                    description += f"- Vertex {vertex} is connected to {edge_descriptions[0]}.\n"
+                else:
+                    edge_text = ", ".join(edge_descriptions[:-1]) + f", and {edge_descriptions[-1]}"
+                    description += f"- Vertex {vertex} is connected to {edge_text}.\n"
+
+        return description

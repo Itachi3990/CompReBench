@@ -8,3 +8,6 @@ Graph/.venv
 Graph/I have a plan/
 Graph/progress_structure.json
 Graph/progress_problem.json
+Graph/Runs/
+Graph/google/
+Graph/qwen/

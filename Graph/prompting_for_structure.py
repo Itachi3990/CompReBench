@@ -37,9 +37,13 @@ NUMBER_OF_PROMPTS_PER_GRAPH = 3 # the LLM or SLM will be tested with the exact s
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DIRECTED_GRAPHS_BASE = os.path.join(BASE_DIR, "graph_samples", "directed")
 UNDIRECTED_GRAPHS_BASE = os.path.join(BASE_DIR, "graph_samples", "undirected")
-LLM_LOG_FILE = os.path.join(BASE_DIR, LM_STUDIO_MODEL, "llm_log_structure.txt")
-LLM_CSV_LOG_FILE = os.path.join(BASE_DIR, LM_STUDIO_MODEL, "llm_log_structure.csv")
-PROGRESS_FILE = os.path.join(BASE_DIR, LM_STUDIO_MODEL, "progress_structure.json")
+OUTPUT_DIR = os.path.join(BASE_DIR, LM_STUDIO_MODEL)
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+LLM_LOG_FILE = os.path.join(OUTPUT_DIR, "llm_log_structure.txt")
+LLM_CSV_LOG_FILE = os.path.join(OUTPUT_DIR, "llm_log_structure.csv")
+PROGRESS_FILE = os.path.join(OUTPUT_DIR, "progress_structure.json")
+
+USE_TWINPORT = True # use twinport encoding method (or incident encoding method)
 
 # ============================================================================
 # LLM / SLM INFERENCE HELPER
@@ -64,6 +68,8 @@ def call_model(prompt: str) -> str:
                 "seed": random.randint(1, 10000000),
                 },
         )
+        if response.status_code != 200:
+            print(f"LM Studio API Error: {response.status_code} - {response.text}")
         response.raise_for_status()
         return response.json()["choices"][0]["message"]["content"].strip()
     else:
@@ -83,7 +89,18 @@ def call_model(prompt: str) -> str:
 # Prompt template (modular, easily replaceable)
 GRAPH_PROMPT = """DO NOT USE THE INTERNET.
 
-Consider the graph described below:
+Consider the graph described below, which is encoded using the Twin-Port encoding scheme:
+
+Understanding Twin-Port Encoding:
+1. The graph consists of Vertices (Nodes) and Edges. Node names are plain strings (e.g., A, B, P, Q).
+2. EDGE TICKETS explicitly define each edge:
+   - "EDGE: E01" means the edge ID is E01.
+   - For DIRECTED graphs: "TAIL_NODE: A" and "HEAD_NODE: B" means the edge goes from vertex A to vertex B.
+   - For UNDIRECTED graphs: "NODE1: A" and "NODE2: B" means there is an undirected edge between vertex A and vertex B.
+   - "TAIL_PORT: p01" or "PORT1: p02" refer to local port addresses on the vertices (which act as explicit memory pointers). You only need to extract the actual node names (e.g. A, B) to build the graph structure.
+   - "WEIGHT: +7.000" specifies the edge weight.
+3. INCIDENCE LEDGER shows the same graph from a node-centric view:
+   - Under "NODE A", an entry like "OUT p01 -> B [E01]" means vertex A has an outgoing edge E01 to vertex B.
 
 {graph_description}
 
@@ -97,7 +114,7 @@ NUMBER_OF_VERTICES: 3
 NUMBER_OF_EDGES: 3
 HAS_SELF_LOOPS: False
 EDGE_LIST: [["A", "B", 1], ["B", "C", 3], ["C", "A", 2]]
-VERTEX_DEGREES: {"A": {"in_degree": 1, "out_degree": 1}, "B": {"in_degree": 1, "out_degree": 1}, "C": {"in_degree": 1, "out_degree": 1}}
+VERTEX_DEGREES: {{"A": {{"in_degree": 1, "out_degree": 1}}, "B": {{"in_degree": 1, "out_degree": 1}}, "C": {{"in_degree": 1, "out_degree": 1}}}}
 
 Important:
 - Use Python literal formatting for all structured values.
@@ -124,61 +141,7 @@ def _natural_vertex_key(vertex):
         if part
     )
 
-def graph_to_description(graph):
-    """Build the natural-language graph description directly from a Graph object."""
-    if not isinstance(graph, Graph):
-        raise TypeError("graph_to_description expects a Graph instance.")
 
-    vertices = sorted(graph.vertices, key=_natural_vertex_key)
-    graph_type = "DIRECTED" if graph.is_directed() else "UNDIRECTED"
-    vertex_word = "vertex" if len(vertices) == 1 else "vertices"
-
-    description = (
-        f"Graph: a {graph_type.lower()} weighted graph with {len(vertices)} {vertex_word}. "
-        f"The vertices are {', '.join(vertices)}.\n"
-    )
-    description += f"The graph contains {graph.get_number_of_edges()} {'edge' if graph.get_number_of_edges() == 1 else 'edges'}.\n"
-    description += "Edge information:\n"
-
-    if graph.is_directed():
-        adjacency = graph.adjacency
-        for vertex in vertices:
-            outgoing = sorted(adjacency.get(vertex, {}).items(), key=lambda item: _natural_vertex_key(item[0]))
-            if not outgoing:
-                description += f"- Vertex {vertex} has no outgoing edges.\n"
-                continue
-
-            edge_descriptions = [f"{neighbor} with weight {weight}" for neighbor, weight in outgoing]
-            if len(edge_descriptions) == 1:
-                description += f"- Vertex {vertex} has an outgoing edge to {edge_descriptions[0]}.\n"
-            else:
-                edge_text = ", ".join(edge_descriptions[:-1]) + f", and {edge_descriptions[-1]}"
-                description += f"- Vertex {vertex} has outgoing edges to {edge_text}.\n"
-    else:
-        seen = set()
-        neighbors = {vertex: [] for vertex in vertices}
-        for u, v, weight in graph.get_edge_list():
-            pair = tuple(sorted((u, v)))
-            if pair in seen:
-                continue
-            seen.add(pair)
-            neighbors[u].append((v, weight))
-            neighbors[v].append((u, weight))
-
-        for vertex in vertices:
-            incident = sorted(neighbors.get(vertex, []), key=lambda item: _natural_vertex_key(item[0]))
-            if not incident:
-                description += f"- Vertex {vertex} is not connected to any other vertex.\n"
-                continue
-
-            edge_descriptions = [f"{neighbor} with weight {weight}" for neighbor, weight in incident]
-            if len(edge_descriptions) == 1:
-                description += f"- Vertex {vertex} is connected to {edge_descriptions[0]}.\n"
-            else:
-                edge_text = ", ".join(edge_descriptions[:-1]) + f", and {edge_descriptions[-1]}"
-                description += f"- Vertex {vertex} is connected to {edge_text}.\n"
-
-    return description
 
 def canonicalize_edge_list(edge_list):
     """Normalize edge list output into a deterministic sorted list of triples."""
@@ -444,7 +407,11 @@ def run_slm_inference():
         print(f"[{idx}/{len(combinations)}] {graph_type}/{graph_folder}")
         
         graph = Graph.from_file(graph_filepath, directed=(graph_type == "directed"))
-        graph_description = graph_to_description(graph)
+        
+        if USE_TWINPORT:
+            graph_description = graph.twinport_description()
+        else:
+            graph_description = graph.incident_description()
         
         if not graph_description:
             print(f"  ❌ ERROR: Failed to load graph")
@@ -566,7 +533,8 @@ def run_graph_structure_judge():
         print(f"Judging row {index+1}/{total_rows}: {row['Graph Type']}/{row['Graph Folder']} Attempt {row['Attempt']}")
         
         graph_type = row['Graph Type']
-        graph_folder = row['Graph Folder']
+        # Convert graph_folder to 2-digit string to handle pandas auto-conversion to int
+        graph_folder = str(row['Graph Folder']).zfill(2)
         base_dir = DIRECTED_GRAPHS_BASE if graph_type == 'directed' else UNDIRECTED_GRAPHS_BASE
         graph_filepath = os.path.join(base_dir, graph_folder, f"graph_{graph_folder}.txt")
         

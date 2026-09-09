@@ -38,9 +38,11 @@ PROBLEM_TYPE_FILTER = 'all'
 # Base directories
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PROBLEMS_BASE = os.path.join(BASE_DIR, "Problems")
-LLM_LOG_FILE = os.path.join(BASE_DIR, LM_STUDIO_MODEL, "llm_log_problem.txt")
-LLM_CSV_LOG_FILE = os.path.join(BASE_DIR, LM_STUDIO_MODEL, "llm_log_problem.csv")
-PROGRESS_FILE = os.path.join(BASE_DIR, LM_STUDIO_MODEL, "progress_problem.json")
+OUTPUT_DIR = os.path.join(BASE_DIR, LM_STUDIO_MODEL)
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+LLM_LOG_FILE = os.path.join(OUTPUT_DIR, "llm_log_problem.txt")
+LLM_CSV_LOG_FILE = os.path.join(OUTPUT_DIR, "llm_log_problem.csv")
+PROGRESS_FILE = os.path.join(OUTPUT_DIR, "progress_problem.json")
 
 # ============================================================================
 # LLM / SLM INFERENCE HELPER
