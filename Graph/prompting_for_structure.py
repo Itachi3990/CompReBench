@@ -29,7 +29,7 @@ LM_STUDIO_MODEL = "google/gemma-3-4b"
 SLM_TEMPERATURE = 0.3
 
 # Set to None to process all combinations, or an integer to limit prompts
-MAX_PROMPTS_COUNT = 3  # if None then, ALL prompts are fed to the LLM/SLM; otherwise if some integer value then, only the first MAX_PROMPTS_COUNT prompts are fed to the LLM/SLM, and then the script stops running after that
+MAX_PROMPTS_COUNT = None  # if None then, ALL prompts are fed to the LLM/SLM; otherwise if some integer value then, only the first MAX_PROMPTS_COUNT prompts are fed to the LLM/SLM, and then the script stops running after that
 NUMBER_OF_GRAPHS = None # if None then, ALL graphs are selected; otherwise if integer value then, that many graphs are selected.
 NUMBER_OF_PROMPTS_PER_GRAPH = 3 # the LLM or SLM will be tested with the exact same graph this many times (API calls are memoryless anyway)
 
@@ -120,6 +120,7 @@ Important instructions:
 - Boolean values must be written as True or False.
 - EDGE_LIST must be a list of [source, destination, weight] triples.
 - VERTEX_DEGREES must map each vertex to a dictionary with in_degree and out_degree keys.
+- ADJACENCY MATRIX MUST be an N x N matrix (2D list) where N is NUMBER_OF_VERTICES. It MUST have exactly N rows and N columns.
 - For undirected graphs, in_degree and out_degree should be equal to the undirected degree.
 - Sort the EDGE_LIST and VERTEX_DEGREES entries in a deterministic vertex order before writing them.
 

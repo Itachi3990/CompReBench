@@ -542,10 +542,6 @@ class Graph:
         lines = []
         lines.append(f"GRAPH TYPE: {graph_type}")
         lines.append("")
-        lines.append("EDGE TICKETS:")
-        for ticket in edge_tickets:
-            lines.append(f"  {ticket}")
-        lines.append("")
         lines.append("INCIDENCE LEDGER:")
         for v in vertices:
             lines.append(f"\n  NODE {v}:")
@@ -554,6 +550,10 @@ class Graph:
                     lines.append(entry)
             else:
                 lines.append("    (isolated)")
+        lines.append("")
+        lines.append("EDGE TICKETS:")
+        for ticket in edge_tickets:
+            lines.append(f"  {ticket}")
         lines.append("")
 
         return "\n".join(lines)
