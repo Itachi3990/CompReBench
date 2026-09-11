@@ -8,6 +8,7 @@ import sys
 from collections import defaultdict
 import csv
 import time
+from tqdm import tqdm
 
 from graph import Graph
 
@@ -403,7 +404,14 @@ def run_slm_inference():
         
     print("\n[STEP 2] Processing graphs...\n")
     
-    for idx, combo in enumerate(combinations[start_idx:], start_idx + 1):
+    progress_bar = tqdm(
+        enumerate(combinations[start_idx:], start_idx + 1),
+        total=len(combinations),
+        initial=start_idx,
+        desc="Processing graphs",
+        dynamic_ncols=True,
+    )
+    for idx, combo in progress_bar:
         graph_type = combo['graph_type']
         graph_file = combo.get('graph_file') or combo.get('graph_folder')
         base_dir = combo['base_dir']
@@ -440,7 +448,6 @@ def run_slm_inference():
         print(prompt) # just print the raw prompt
         
         attempt = combo.get('attempt', 1)
-        print(f"\n--- Attempt {attempt} ---")
         start_time = time.time()
         response = call_model(prompt)
         end_time = time.time()
@@ -588,6 +595,145 @@ def _fmt_degrees(degrees):
     return "\n".join(lines)
 
 
+def generate_comparative_analysis(df) -> str:
+    """
+    Generate comparative analysis for:
+      - Small graphs (< 20 nodes)
+      - Medium graphs (20-50 nodes)
+      - Large graphs (> 50 nodes)
+    """
+    import ast
+    import pandas as pd
+
+    def _extract_nodes(row):
+        val = row.get("Number of Nodes")
+        if pd.notna(val) and str(val).strip() != "":
+            try:
+                return int(float(val))
+            except (ValueError, TypeError):
+                pass
+        deg_str = row.get("Expected Vertex Degrees")
+        if pd.notna(deg_str) and str(deg_str).strip() != "":
+            try:
+                parsed = ast.literal_eval(str(deg_str))
+                if isinstance(parsed, dict):
+                    return len(parsed)
+            except Exception:
+                pass
+        return None
+
+    # Filter to judged rows with numeric Total Score
+    valid_rows = []
+    for _, row in df.iterrows():
+        total_sc = row.get("Total Score (100)")
+        if pd.notna(total_sc) and str(total_sc).strip() != "":
+            try:
+                sc_float = float(total_sc)
+                nodes = _extract_nodes(row)
+                if nodes is not None:
+                    valid_rows.append({
+                        "nodes": nodes,
+                        "total_score": sc_float,
+                        "adj_entry": float(row.get("Adj Entry Score (10)", 0) or 0),
+                        "adj_row": float(row.get("Adj Row Score (20)", 0) or 0),
+                        "edge_score": float(row.get("Edge List Score (30)", 0) or 0),
+                        "deg_score": float(row.get("Degree Score (30)", 0) or 0),
+                        "meta_score": float(row.get("Other Meta Score (10)", 0) or 0),
+                        "adj_match": str(row.get("Adj Exact Match", "")).strip().lower() == "true",
+                    })
+            except (ValueError, TypeError):
+                continue
+
+    tiers = {
+        "Small (<20)": [r for r in valid_rows if r["nodes"] < 20],
+        "Medium (20-50)": [r for r in valid_rows if 20 <= r["nodes"] <= 50],
+        "Large (>50)": [r for r in valid_rows if r["nodes"] > 50],
+    }
+
+    def _stats(group):
+        count = len(group)
+        if count == 0:
+            return {
+                "count": 0,
+                "avg_total": 0.0,
+                "perfect_cnt": 0,
+                "perfect_pct": 0.0,
+                "above80_cnt": 0,
+                "above80_pct": 0.0,
+                "adj_match_cnt": 0,
+                "adj_match_pct": 0.0,
+                "avg_adj_entry": 0.0,
+                "avg_adj_row": 0.0,
+                "avg_edge": 0.0,
+                "avg_deg": 0.0,
+                "avg_meta": 0.0,
+            }
+        p_cnt = sum(1 for r in group if r["total_score"] >= 100.0)
+        a80_cnt = sum(1 for r in group if r["total_score"] >= 80.0)
+        m_cnt = sum(1 for r in group if r["adj_match"])
+        return {
+            "count": count,
+            "avg_total": sum(r["total_score"] for r in group) / count,
+            "perfect_cnt": p_cnt,
+            "perfect_pct": (p_cnt / count) * 100,
+            "above80_cnt": a80_cnt,
+            "above80_pct": (a80_cnt / count) * 100,
+            "adj_match_cnt": m_cnt,
+            "adj_match_pct": (m_cnt / count) * 100,
+            "avg_adj_entry": sum(r["adj_entry"] for r in group) / count,
+            "avg_adj_row": sum(r["adj_row"] for r in group) / count,
+            "avg_edge": sum(r["edge_score"] for r in group) / count,
+            "avg_deg": sum(r["deg_score"] for r in group) / count,
+            "avg_meta": sum(r["meta_score"] for r in group) / count,
+        }
+
+    sm = _stats(tiers["Small (<20)"])
+    med = _stats(tiers["Medium (20-50)"])
+    lg = _stats(tiers["Large (>50)"])
+
+    def _cell_score(st, key, max_val):
+        if st["count"] == 0:
+            return "N/A (0 graphs)"
+        return f"{st[key]:.2f} / {max_val} ({(st[key]/max_val)*100:.1f}%)"
+
+    def _cell_rate(st, cnt_key, pct_key):
+        if st["count"] == 0:
+            return "N/A (0 graphs)"
+        return f"{st[cnt_key]}/{st['count']} ({st[pct_key]:.1f}%)"
+
+    def _cell_total(st):
+        if st["count"] == 0:
+            return "N/A (0 graphs)"
+        return f"{st['avg_total']:.2f} / 100 ({st['avg_total']:.1f}%)"
+
+    lines = [
+        "",
+        "=" * 92,
+        "COMPARATIVE ANALYSIS BY GRAPH SIZE",
+        "=" * 92,
+        "  • Small Graphs  : < 20 nodes",
+        "  • Medium Graphs : 20 - 50 nodes",
+        "  • Large Graphs  : > 50 nodes",
+        "-" * 92,
+        f"{'Metric':<38} {'Small (<20)':<25} {'Medium (20-50)':<25} {'Large (>50)':<25}",
+        "-" * 92,
+        f"{'Total Evaluated Attempts':<38} {sm['count']:<25} {med['count']:<25} {lg['count']:<25}",
+        f"{'Average Accuracy / Total Score':<38} {_cell_total(sm):<25} {_cell_total(med):<25} {_cell_total(lg):<25}",
+        f"{'High Accuracy Rate (≥ 80/100)':<38} {_cell_rate(sm, 'above80_cnt', 'above80_pct'):<25} {_cell_rate(med, 'above80_cnt', 'above80_pct'):<25} {_cell_rate(lg, 'above80_cnt', 'above80_pct'):<25}",
+        f"{'Perfect Score Rate (100/100)':<38} {_cell_rate(sm, 'perfect_cnt', 'perfect_pct'):<25} {_cell_rate(med, 'perfect_cnt', 'perfect_pct'):<25} {_cell_rate(lg, 'perfect_cnt', 'perfect_pct'):<25}",
+        f"{'Adjacency Exact Match Rate':<38} {_cell_rate(sm, 'adj_match_cnt', 'adj_match_pct'):<25} {_cell_rate(med, 'adj_match_cnt', 'adj_match_pct'):<25} {_cell_rate(lg, 'adj_match_cnt', 'adj_match_pct'):<25}",
+        "-" * 92,
+        "DETAILED SUB-SCORE BREAKDOWN (Average Score & Percentage of Max):",
+        f"{'  • Adj Entry Score (max 10)':<38} {_cell_score(sm, 'avg_adj_entry', 10):<25} {_cell_score(med, 'avg_adj_entry', 10):<25} {_cell_score(lg, 'avg_adj_entry', 10):<25}",
+        f"{'  • Adj Row Score (max 20)':<38} {_cell_score(sm, 'avg_adj_row', 20):<25} {_cell_score(med, 'avg_adj_row', 20):<25} {_cell_score(lg, 'avg_adj_row', 20):<25}",
+        f"{'  • Edge List Score (max 30)':<38} {_cell_score(sm, 'avg_edge', 30):<25} {_cell_score(med, 'avg_edge', 30):<25} {_cell_score(lg, 'avg_edge', 30):<25}",
+        f"{'  • Vertex Degree Score (max 30)':<38} {_cell_score(sm, 'avg_deg', 30):<25} {_cell_score(med, 'avg_deg', 30):<25} {_cell_score(lg, 'avg_deg', 30):<25}",
+        f"{'  • Other Metadata (max 10)':<38} {_cell_score(sm, 'avg_meta', 10):<25} {_cell_score(med, 'avg_meta', 10):<25} {_cell_score(lg, 'avg_meta', 10):<25}",
+        "=" * 92,
+    ]
+    return "\n".join(lines)
+
+
 def run_graph_structure_judge():
     print("=" * 80)
     print("GRAPH STRUCTURE JUDGE  (100-point rubric)")
@@ -630,7 +776,7 @@ def run_graph_structure_judge():
     judge_log_lines.append("GRAPH STRUCTURE JUDGE — DETAILED LOG")
     judge_log_lines.append("=" * 80)
 
-    for index, row in df.iterrows():
+    for index, row in tqdm(df.iterrows(), total=total_rows, desc="Judging graphs", dynamic_ncols=True):
         # Skip already-judged rows
         existing = row.get("Total Score (100)", None)
         if pd.notna(existing) and str(existing).strip() != "":
@@ -668,6 +814,8 @@ def run_graph_structure_judge():
         score_accumulator.append(sc["total_score"])
 
         # ── Write to CSV ──────────────────────────────────────────────────────
+        df.at[index, "Number of Nodes"]        = len(graph.vertices)
+        df.at[index, "Number of Edges"]        = len(graph.edges)
         df.at[index, "Total Score (100)"]      = sc["total_score"]
         df.at[index, "Adj Entry Score (10)"]   = sc["adj_entry_score"]
         df.at[index, "Adj Row Score (20)"]     = sc["adj_row_score"]
@@ -755,6 +903,11 @@ def run_graph_structure_judge():
 
     print(final_block)
     judge_log_lines.append(final_block)
+
+    # ── Comparative Analysis by Graph Size ────────────────────────────────────
+    comparative_analysis_str = generate_comparative_analysis(df)
+    print(comparative_analysis_str)
+    judge_log_lines.append(comparative_analysis_str)
 
     full_log = "\n".join(judge_log_lines)
     save_to_log(full_log)

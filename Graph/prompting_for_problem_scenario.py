@@ -6,6 +6,7 @@ import sys
 import csv
 import time
 import pandas as pd
+from tqdm import tqdm
 
 # Fix stdout encoding for printing emojis on Windows
 if sys.stdout.encoding != 'utf-8':
@@ -379,7 +380,14 @@ def run_slm_inference():
         
     print("\n[STEP 2] Processing problems...\n")
     
-    for idx, combo in enumerate(combinations[start_idx:], start_idx + 1):
+    progress_bar = tqdm(
+        enumerate(combinations[start_idx:], start_idx + 1),
+        total=len(combinations),
+        initial=start_idx,
+        desc="Processing problems",
+        dynamic_ncols=True,
+    )
+    for idx, combo in progress_bar:
         problem_category = combo['problem_category']
         problem_path = combo['problem_path']
         
@@ -490,7 +498,7 @@ def run_llm_as_a_judge():
         print(f"\n--- Judging Round ({len(rows_to_judge)} rows to process) ---")
         round_had_failures = False
         
-        for index in rows_to_judge:
+        for index in tqdm(rows_to_judge, desc=f"Judging Round ({len(rows_to_judge)} rows)", dynamic_ncols=True):
             row = df.loc[index]
             print(f"Judging row {index+1}/{total_rows}: {row['Problem Category']}/{row['Problem Name']} Attempt {row['Attempt']}")
             
