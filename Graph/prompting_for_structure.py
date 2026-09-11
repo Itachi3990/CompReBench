@@ -29,8 +29,8 @@ LM_STUDIO_MODEL = "google/gemma-3-4b"
 SLM_TEMPERATURE = 0.3
 
 # Set to None to process all combinations, or an integer to limit prompts
-MAX_PROMPTS_COUNT = 3  # if None then, ALL prompts are generated; otherwise if integer value then, that many prompts are generated, and then the script stops running
-NUMBER_OF_GRAPHS = 10 # if None then, ALL graphs are selected; otherwise if integer value then, that many graphs are selected.
+MAX_PROMPTS_COUNT = 3  # if None then, ALL prompts are fed to the LLM/SLM; otherwise if some integer value then, only the first MAX_PROMPTS_COUNT prompts are fed to the LLM/SLM, and then the script stops running after that
+NUMBER_OF_GRAPHS = None # if None then, ALL graphs are selected; otherwise if integer value then, that many graphs are selected.
 NUMBER_OF_PROMPTS_PER_GRAPH = 3 # the LLM or SLM will be tested with the exact same graph this many times (API calls are memoryless anyway)
 
 # Base directories
@@ -87,26 +87,25 @@ def call_model(prompt: str) -> str:
         return result.stdout.strip()
 
 # Prompt template (modular, easily replaceable)
-GRAPH_PROMPT = """DO NOT USE THE INTERNET.
-
-Consider the graph described below, which is encoded using the Twin-Port encoding scheme:
-
-Understanding Twin-Port Encoding:
-1. The graph consists of Vertices (Nodes) and Edges. Node names are plain strings (e.g., A, B, P, Q).
+TWINPORT_EXPLANATION = """Understanding Twin-Port Encoding:
+1. The graph consists of Vertices (Nodes) and Edges. Node names are plain strings (e.g., A, B, P, Q, V1, V2, V50 etc).
 2. EDGE TICKETS explicitly define each edge:
    - "EDGE: E01" means the edge ID is E01.
-   - For DIRECTED graphs: "TAIL_NODE: A" and "HEAD_NODE: B" means the edge goes from vertex A to vertex B.
+   - For DIRECTED graphs: "TAIL_NODE: A" and "HEAD_NODE: B" means the directed edge goes from vertex A to vertex B.
    - For UNDIRECTED graphs: "NODE1: A" and "NODE2: B" means there is an undirected edge between vertex A and vertex B.
-   - "TAIL_PORT: p01" or "PORT1: p02" refer to local port addresses on the vertices (which act as explicit memory pointers). You only need to extract the actual node names (e.g. A, B) to build the graph structure.
+   - "TAIL_PORT: p01", "HEAD_PORT: p01", "PORT1: p02", "PORT2: p03" etc. refer to local port addresses on the vertices (which act as explicit memory pointers). You only need to extract the actual node names (e.g. A, B, V1, V2, V45, V50 etc) to build the graph structure.
    - "WEIGHT: +7.000" specifies the edge weight.
 3. INCIDENCE LEDGER shows the same graph from a node-centric view:
-   - Under "NODE A", an entry like "OUT p01 -> B [E01]" means vertex A has an outgoing edge E01 to vertex B.
+   - For DIRECTED graphs: Under "NODE A", an entry like "OUT p01 -> B [E01]" means vertex A has an outgoing edge E01 to vertex B. An entry like "IN p03 <- D [E04]" means vertex A has an incoming edge E04 from vertex D.
+   - For UNDIRECTED graphs: Under "NODE A", an entry like "UNDIR p01 <-> B [E01]" means there is an undirected edge E01 connecting vertex A and vertex B.
+"""
 
-{graph_description}
+STRUCTURE_PROMPT = """DO NOT USE THE INTERNET.
+{encoding_explanation}
+Your task is to extract the exact graph metadata based on the provided graph description. You need to determine whether the graph is directed or undirected, whether the graph has any self-loops, and the number of vertices and edges. You also need to determine the adjacency matrix and the edge list of the graph, and the in-degree and out-degree of every vertex. 
 
-Extract the exact graph metadata based on the description above. You need to determine whether the graph is directed or undirected, whether the graph has any self-loops, and the number of vertices and edges. You also need to determine the adjacency matrix and the edge list of the graph, and the in-degree and out-degree of every vertex. Use deterministic formatting and do not add extra labels or commentary.
-
-Your output must EXACTLY follow this format, in this exact order:
+Use deterministic formatting (as shown below) and do not add extra labels or commentary.
+An example of the exact output format (DO NOT COPY THESE VALUES, it is only an example output format) for a hypothetical random graph with 3 edges and 3 vertices is given below:
 
 ADJACENCY MATRIX: [[0, 1, 0], [0, 0, 3], [2, 0, 0]]
 IS_DIRECTED: True
@@ -116,13 +115,17 @@ HAS_SELF_LOOPS: False
 EDGE_LIST: [["A", "B", 1], ["B", "C", 3], ["C", "A", 2]]
 VERTEX_DEGREES: {{"A": {{"in_degree": 1, "out_degree": 1}}, "B": {{"in_degree": 1, "out_degree": 1}}, "C": {{"in_degree": 1, "out_degree": 1}}}}
 
-Important:
+Important instructions:
 - Use Python literal formatting for all structured values.
 - Boolean values must be written as True or False.
 - EDGE_LIST must be a list of [source, destination, weight] triples.
 - VERTEX_DEGREES must map each vertex to a dictionary with in_degree and out_degree keys.
 - For undirected graphs, in_degree and out_degree should be equal to the undirected degree.
 - Sort the EDGE_LIST and VERTEX_DEGREES entries in a deterministic vertex order before writing them.
+
+Now, consider the actual graph described below. Provide ONLY the extracted metadata for THIS graph below, using the exact output format shown above:
+
+{graph_description}
 """
 
 # ============================================================================
@@ -141,13 +144,16 @@ def _natural_vertex_key(vertex):
         if part
     )
 
-
-
 def canonicalize_edge_list(edge_list):
     """Normalize edge list output into a deterministic sorted list of triples."""
     normalized = []
     for u, v, weight in edge_list:
-        normalized.append((str(u), str(v), int(weight)))
+        try:
+            f_val = float(weight)
+            w = int(f_val) if f_val.is_integer() else f_val
+        except (ValueError, TypeError):
+            w = 1
+        normalized.append((str(u), str(v), w))
     return sorted(
         normalized,
         key=lambda item: (_natural_vertex_key(item[0]), _natural_vertex_key(item[1]), item[2]),
@@ -348,20 +354,20 @@ def run_slm_inference():
         
         print("\n[STEP 1] Collecting graphs...")
         
-        directed_folders = sorted([d for d in os.listdir(DIRECTED_GRAPHS_BASE)
-                                   if os.path.isdir(os.path.join(DIRECTED_GRAPHS_BASE, d))])
+        directed_files = sorted([f for f in os.listdir(DIRECTED_GRAPHS_BASE)
+                                 if f.endswith(".txt") and os.path.isfile(os.path.join(DIRECTED_GRAPHS_BASE, f))])
         
-        undirected_folders = sorted([d for d in os.listdir(UNDIRECTED_GRAPHS_BASE)
-                                     if os.path.isdir(os.path.join(UNDIRECTED_GRAPHS_BASE, d))])
+        undirected_files = sorted([f for f in os.listdir(UNDIRECTED_GRAPHS_BASE)
+                                   if f.endswith(".txt") and os.path.isfile(os.path.join(UNDIRECTED_GRAPHS_BASE, f))])
         
-        print(f"  Found {len(directed_folders)} directed graph folders")
-        print(f"  Found {len(undirected_folders)} undirected graph folders")
+        print(f"  Found {len(directed_files)} directed graphs")
+        print(f"  Found {len(undirected_files)} undirected graphs")
         
         directed_count = None if NUMBER_OF_GRAPHS is None else NUMBER_OF_GRAPHS // 2
         undirected_count = None if NUMBER_OF_GRAPHS is None else NUMBER_OF_GRAPHS // 2
         
-        selected_directed = select_graphs(directed_folders, directed_count)
-        selected_undirected = select_graphs(undirected_folders, undirected_count)
+        selected_directed = select_graphs(directed_files, directed_count)
+        selected_undirected = select_graphs(undirected_files, undirected_count)
         
         selected_graphs = [
             ('directed', d) for d in selected_directed
@@ -370,28 +376,27 @@ def run_slm_inference():
         ]
         
         print(f"\n  Selected graphs:")
-        for graph_type, folder in selected_graphs:
-            print(f"    - {graph_type}/{folder}")
+        for graph_type, filename in selected_graphs:
+            print(f"    - {graph_type}/{filename}")
             
         combinations = []
-        for graph_type, graph_folder in selected_graphs:
-            base_dir = DIRECTED_GRAPHS_BASE if graph_type == 'directed' else UNDIRECTED_GRAPHS_BASE
-            combinations.append({
-                'graph_type': graph_type,
-                'graph_folder': graph_folder,
-                'base_dir': base_dir,
-            })
+        for attempt in range(1, NUMBER_OF_PROMPTS_PER_GRAPH + 1):
+            for graph_type, graph_file in selected_graphs:
+                base_dir = DIRECTED_GRAPHS_BASE if graph_type == 'directed' else UNDIRECTED_GRAPHS_BASE
+                combinations.append({
+                    'graph_type': graph_type,
+                    'graph_file': graph_file,
+                    'base_dir': base_dir,
+                    'attempt': attempt,
+                })
             
         total_combinations = len(combinations)
-        print(f"\n  Total graph combinations: {total_combinations}")
+        print(f"\n  Total prompts to be sent: {total_combinations}")
         print(f"  MAX_PROMPTS_COUNT: {MAX_PROMPTS_COUNT if MAX_PROMPTS_COUNT else 'None (all)'}")
         
         if MAX_PROMPTS_COUNT:
-            combinations = random.sample(
-                combinations,
-                min(MAX_PROMPTS_COUNT, len(combinations))
-            )
-            print(f"  Limited to: {len(combinations)} graphs")
+            combinations = combinations[:MAX_PROMPTS_COUNT]
+            print(f"  Limited to: {len(combinations)} prompts")
             
         start_idx = 0
         
@@ -399,12 +404,19 @@ def run_slm_inference():
     
     for idx, combo in enumerate(combinations[start_idx:], start_idx + 1):
         graph_type = combo['graph_type']
-        graph_folder = combo['graph_folder']
+        graph_file = combo.get('graph_file') or combo.get('graph_folder')
         base_dir = combo['base_dir']
         
-        graph_filepath = os.path.join(base_dir, graph_folder, f"graph_{graph_folder}.txt")
+        if graph_file.endswith(".txt"):
+            graph_filepath = os.path.join(base_dir, graph_file)
+            graph_name = os.path.splitext(graph_file)[0]
+        else:
+            graph_name = f"graph_{str(graph_file).zfill(2)}"
+            graph_filepath = os.path.join(base_dir, f"{graph_name}.txt")
+            if not os.path.exists(graph_filepath):
+                graph_filepath = os.path.join(base_dir, str(graph_file), f"graph_{str(graph_file).zfill(2)}.txt")
         
-        print(f"[{idx}/{len(combinations)}] {graph_type}/{graph_folder}")
+        print(f"[{idx}/{len(combinations)}] {graph_type}/{graph_name}")
         
         graph = Graph.from_file(graph_filepath, directed=(graph_type == "directed"))
         
@@ -415,51 +427,56 @@ def run_slm_inference():
         
         if not graph_description:
             print(f"  ❌ ERROR: Failed to load graph")
-            save_to_log(f"\n[{idx}] {graph_type}/{graph_folder}")
+            save_to_log(f"\n[{idx}] {graph_type}/{graph_name}")
             save_to_log(f"  ❌ ERROR: Failed to load files\n")
             continue
         
-        prompt = GRAPH_PROMPT.format(
+        prompt = STRUCTURE_PROMPT.format(
+            encoding_explanation="\n" + TWINPORT_EXPLANATION if USE_TWINPORT else "",
             graph_description=graph_description,
         )
 
         print(prompt) # just print the raw prompt
         
-        for attempt in range(1, NUMBER_OF_PROMPTS_PER_GRAPH + 1):
-            print(f"\n--- Attempt {attempt} ---")
-            start_time = time.time()
-            response = call_model(prompt)
-            end_time = time.time()
-            duration = round(end_time - start_time, 2)
+        attempt = combo.get('attempt', 1)
+        print(f"\n--- Attempt {attempt} ---")
+        start_time = time.time()
+        response = call_model(prompt)
+        end_time = time.time()
+        duration = round(end_time - start_time, 2)
 
-            print("LLM's Complete, Unedited Response:", response)
-            print("-" * 80)
+        print("LLM's Complete, Unedited Response:", response)
+        print("-" * 80)
 
-            save_to_log(f"\\n[{idx} - Attempt {attempt}] {graph_type}/{graph_folder}")
+        save_to_log(f"\n[{idx} - Attempt {attempt}] {graph_type}/{graph_name}")
 
-            csv_row = {
-                "Attempt": attempt,
-                "Graph Type": graph_type,
-                "Graph Folder": graph_folder,
-                "Execution Time (s)": duration,
-                "Number of Nodes": len(graph.vertices),
-                "Number of Edges": len(graph.edges),
-                "Adjacency Match": "",
-                "Adjacency Error": "",
-                "Adjacency Entry Match Score": "",
-                "Adjacency Row Match Score": "",
-                "LLM Adjacency Matrix": "",
-                "Expected Adjacency Matrix": "",
-                "Metadata Match": "",
-                "LLM Metadata": "",
-                "Expected Metadata": "",
-                "Metadata Error Reason": "",
-                "Prompt Length (chars)": len(prompt),
-                "Response Length (chars)": len(response),
-                "Raw Response": response
-            }
-            fieldnames = list(csv_row.keys())
-            log_to_csv(LLM_CSV_LOG_FILE, csv_row, fieldnames)
+        save_to_log(f"Prompt to the LLM: \n{prompt}")
+
+        save_to_log(f"LLM's Complete, Unedited Response: \n{response}")
+
+        csv_row = {
+            "Attempt": attempt,
+            "Graph Type": graph_type,
+            "Graph Folder": graph_name,
+            "Execution Time (s)": duration,
+            "Number of Nodes": len(graph.vertices),
+            "Number of Edges": len(graph.edges),
+            "Adjacency Match": "",
+            "Adjacency Error": "",
+            "Adjacency Entry Match Score": "",
+            "Adjacency Row Match Score": "",
+            "LLM Adjacency Matrix": "",
+            "Expected Adjacency Matrix": "",
+            "Metadata Match": "",
+            "LLM Metadata": "",
+            "Expected Metadata": "",
+            "Metadata Error Reason": "",
+            "Prompt Length (chars)": len(prompt),
+            "Response Length (chars)": len(response),
+            "Raw Response": response
+        }
+        fieldnames = list(csv_row.keys())
+        log_to_csv(LLM_CSV_LOG_FILE, csv_row, fieldnames)
 
         state_to_save = {
             "combinations": combinations,
@@ -473,149 +490,276 @@ def run_slm_inference():
     print("\n✅ SLM Inference completed.")
 
 
+# ============================================================================
+# SCORING SCHEME  (100-point rubric)
+# ============================================================================
+#  10 pts  → adjacency matrix ENTRY score  (get_adjacency_matrix_entry_score)
+#  20 pts  → adjacency matrix ROW   score  (get_adjacency_matrix_row_score)
+#  30 pts  → edge list score               (get_edge_list_score)   — partial credit
+#  30 pts  → vertex degrees score          (get_vertex_degrees_score) — partial credit
+#  10 pts  → other metadata               (is_directed, n_vertices, n_edges, has_self_loops)
+
+def _score_other_metadata(response, graph):
+    """Return (score_0_to_1, detail_dict) for the 4 simple metadata fields."""
+    fields = {
+        "is_directed":        (extract_bool_field(response, "IS_DIRECTED"),        bool(graph.is_directed())),
+        "number_of_vertices": (extract_int_field(response, "NUMBER_OF_VERTICES"),  int(graph.get_number_of_vertices())),
+        "number_of_edges":    (extract_int_field(response, "NUMBER_OF_EDGES"),      int(graph.get_number_of_edges())),
+        "has_self_loops":     (extract_bool_field(response, "HAS_SELF_LOOPS"),      bool(graph.has_self_loops())),
+    }
+    correct = sum(1 for llm_val, exp_val in fields.values() if llm_val == exp_val)
+    score = correct / len(fields)
+    detail = {k: {"llm": v[0], "expected": v[1], "ok": v[0] == v[1]} for k, v in fields.items()}
+    return score, detail
+
+
+def score_response(response: str, graph) -> dict:
+    """
+    Score a single LLM response against the ground-truth graph.
+    Returns a dict with all sub-scores and a final 0–100 total.
+    """
+    # --- Adjacency matrix ---
+    extracted_matrix = extract_adjacency_matrix_from_response(response)
+    expected_matrix  = graph.get_adjacency_matrix()
+    adj_entry_raw = graph.get_adjacency_matrix_entry_score(extracted_matrix) if extracted_matrix is not None else 0.0
+    adj_row_raw   = graph.get_adjacency_matrix_row_score(extracted_matrix)   if extracted_matrix is not None else 0.0
+    adj_match     = graph.adjacency_matrix_matches(extracted_matrix) if extracted_matrix is not None else False
+
+    # --- Edge list ---
+    extracted_edges = extract_edge_list_from_response(response)
+    edge_score_raw  = graph.get_edge_list_score(extracted_edges) if extracted_edges is not None else 0.0
+    expected_edges  = canonicalize_edge_list(graph.get_edge_list())
+
+    # --- Vertex degrees ---
+    extracted_degrees = extract_vertex_degrees_from_response(response)
+    deg_score_raw     = graph.get_vertex_degrees_score(extracted_degrees) if extracted_degrees is not None else 0.0
+    expected_degrees  = canonicalize_vertex_degrees(graph.get_indegree_and_outdegree_of_every_vertex())
+
+    # --- Other metadata ---
+    meta_score_raw, meta_detail = _score_other_metadata(response, graph)
+
+    # --- Weighted total (out of 100) ---
+    total = (
+        adj_entry_raw * 10
+        + adj_row_raw   * 20
+        + edge_score_raw * 30
+        + deg_score_raw  * 30
+        + meta_score_raw * 10
+    )
+
+    return {
+        "adj_entry_score":  round(adj_entry_raw * 10, 2),
+        "adj_row_score":    round(adj_row_raw   * 20, 2),
+        "edge_list_score":  round(edge_score_raw * 30, 2),
+        "deg_score":        round(deg_score_raw  * 30, 2),
+        "meta_score":       round(meta_score_raw * 10, 2),
+        "total_score":      round(total, 2),
+        "adj_match":        adj_match,
+        "extracted_matrix": extracted_matrix,
+        "expected_matrix":  expected_matrix,
+        "extracted_edges":  extracted_edges,
+        "expected_edges":   expected_edges,
+        "extracted_degrees": extracted_degrees,
+        "expected_degrees":  expected_degrees,
+        "meta_detail":      meta_detail,
+    }
+
+
+def _fmt_matrix(matrix):
+    """Pretty-print a matrix for human comparison."""
+    if matrix is None:
+        return "  (could not parse)"
+    return "\n".join("  " + str(row) for row in matrix)
+
+
+def _fmt_edges(edges):
+    if not edges:
+        return "  (none / could not parse)"
+    return "\n".join(f"  {e}" for e in edges)
+
+
+def _fmt_degrees(degrees):
+    if not degrees:
+        return "  (none / could not parse)"
+    lines = []
+    for v, d in degrees.items():
+        lines.append(f"  {v}: in={d.get('in_degree','?')}  out={d.get('out_degree','?')}")
+    return "\n".join(lines)
+
+
 def run_graph_structure_judge():
-    print("="*80)
-    print("GRAPH STRUCTURE JUDGE")
-    print("="*80)
-    
+    print("=" * 80)
+    print("GRAPH STRUCTURE JUDGE  (100-point rubric)")
+    print("=" * 80)
+
     import pandas as pd
-    
+
     if not os.path.exists(LLM_CSV_LOG_FILE):
         print(f"❌ CSV log file not found at {LLM_CSV_LOG_FILE}. Run slm inference first.")
         return
-        
+
     df = pd.read_csv(LLM_CSV_LOG_FILE)
-    
-    # Ensure columns exist
-    for col in ["Adjacency Match", "Adjacency Error", "Adjacency Entry Match Score", "Adjacency Row Match Score", 
-                "LLM Adjacency Matrix", "Expected Adjacency Matrix", "Metadata Match", "LLM Metadata", 
-                "Expected Metadata", "Metadata Error Reason"]:
+
+    # ── Ensure all scoring columns exist ──────────────────────────────────────
+    score_cols = [
+        "Total Score (100)",
+        "Adj Entry Score (10)",
+        "Adj Row Score (20)",
+        "Edge List Score (30)",
+        "Degree Score (30)",
+        "Other Meta Score (10)",
+        "Adj Exact Match",
+        "LLM Adjacency Matrix",
+        "Expected Adjacency Matrix",
+        "LLM Edge List",
+        "Expected Edge List",
+        "LLM Vertex Degrees",
+        "Expected Vertex Degrees",
+        "Meta Detail",
+    ]
+    for col in score_cols:
         if col not in df.columns:
-            df[col] = pd.Series(dtype='object')
-            
-    stats = {
-        'total': 0,
-        'adjacency_correct': 0,
-        'adjacency_wrong': 0,
-        'adjacency_error': 0,
-        'metadata_correct': 0,
-        'metadata_wrong': 0,
-        'metadata_error': 0,
-        'failed_adjacency_matrices': [],
-    }
-    
+            df[col] = pd.Series(dtype="object")
+
     total_rows = len(df)
-    
+    score_accumulator = []   # collect total scores for final averages
+
+    judge_log_lines = []
+    judge_log_lines.append("=" * 80)
+    judge_log_lines.append("GRAPH STRUCTURE JUDGE — DETAILED LOG")
+    judge_log_lines.append("=" * 80)
+
     for index, row in df.iterrows():
-        stats['total'] += 1
-        
-        current_match = row.get('Metadata Match', None)
-        if pd.notna(current_match) and str(current_match).strip() != "":
-            # Existing score found
+        # Skip already-judged rows
+        existing = row.get("Total Score (100)", None)
+        if pd.notna(existing) and str(existing).strip() != "":
             try:
-                if str(row.get('Adjacency Match', '')).lower() == 'true':
-                    stats['adjacency_correct'] += 1
-                elif str(row.get('Adjacency Error', '')).lower() == 'true':
-                    stats['adjacency_error'] += 1
-                else:
-                    stats['adjacency_wrong'] += 1
-                    
-                if str(row.get('Metadata Match', '')).lower() == 'true':
-                    stats['metadata_correct'] += 1
-                elif str(row.get('Metadata Match', '')).lower() == 'false':
-                    stats['metadata_wrong'] += 1
-                else:
-                    stats['metadata_error'] += 1
-            except:
+                score_accumulator.append(float(existing))
+            except ValueError:
                 pass
             continue
-            
-        print(f"Judging row {index+1}/{total_rows}: {row['Graph Type']}/{row['Graph Folder']} Attempt {row['Attempt']}")
-        
-        graph_type = row['Graph Type']
-        # Convert graph_folder to 2-digit string to handle pandas auto-conversion to int
-        graph_folder = str(row['Graph Folder']).zfill(2)
-        base_dir = DIRECTED_GRAPHS_BASE if graph_type == 'directed' else UNDIRECTED_GRAPHS_BASE
-        graph_filepath = os.path.join(base_dir, graph_folder, f"graph_{graph_folder}.txt")
-        
+
+        graph_type   = row["Graph Type"]
+        graph_name   = str(row["Graph Folder"]).strip()
+        attempt      = row["Attempt"]
+        print(f"Judging row {index + 1}/{total_rows}: {graph_type}/{graph_name} Attempt {attempt}")
+
+        base_dir      = DIRECTED_GRAPHS_BASE if graph_type == "directed" else UNDIRECTED_GRAPHS_BASE
+
+        # Resolve graph filepath: direct file, with .txt, with graph_ prefix, or legacy nested folder
+        if os.path.exists(os.path.join(base_dir, graph_name)):
+            graph_filepath = os.path.join(base_dir, graph_name)
+        elif os.path.exists(os.path.join(base_dir, f"{graph_name}.txt")):
+            graph_filepath = os.path.join(base_dir, f"{graph_name}.txt")
+        elif os.path.exists(os.path.join(base_dir, f"graph_{graph_name.zfill(2)}.txt")):
+            graph_filepath = os.path.join(base_dir, f"graph_{graph_name.zfill(2)}.txt")
+        else:
+            graph_filepath = os.path.join(base_dir, graph_name.zfill(2), f"graph_{graph_name.zfill(2)}.txt")
+
         try:
             graph = Graph.from_file(graph_filepath, directed=(graph_type == "directed"))
         except Exception as e:
             print(f"  ❌ ERROR loading graph: {e}")
-            stats['metadata_error'] += 1
-            stats['adjacency_error'] += 1
             continue
 
-        expected_matrix = graph.get_adjacency_matrix()
-        response = row['Raw Response']
-        
-        extracted_matrix = extract_adjacency_matrix_from_response(response)
-        
-        adjacency_match = False
-        adjacency_error = False
-        if expected_matrix is None:
-            adjacency_error = True
-            stats['adjacency_error'] += 1
-        elif extracted_matrix is None:
-            stats['adjacency_wrong'] += 1
-            stats['failed_adjacency_matrices'].append(f"{graph_type}/{graph_folder}")
-        elif graph.adjacency_matrix_matches(extracted_matrix):
-            adjacency_match = True
-            stats['adjacency_correct'] += 1
-        else:
-            stats['adjacency_wrong'] += 1
+        response = str(row["Raw Response"])
+        sc = score_response(response, graph)
+        score_accumulator.append(sc["total_score"])
 
-        df.at[index, 'Adjacency Match'] = adjacency_match
-        df.at[index, 'Adjacency Error'] = adjacency_error
-        df.at[index, 'Adjacency Entry Match Score'] = graph.get_adjacency_matrix_entry_score(extracted_matrix) if extracted_matrix is not None else 0.0
-        df.at[index, 'Adjacency Row Match Score'] = graph.get_adjacency_matrix_row_score(extracted_matrix) if extracted_matrix is not None else 0.0
-        df.at[index, 'LLM Adjacency Matrix'] = matrix_to_string(extracted_matrix)
-        df.at[index, 'Expected Adjacency Matrix'] = matrix_to_string(expected_matrix)
-
-        metadata_ok, extracted_metadata, expected_metadata, reason = graph_metadata_matches(response, graph)
-        if metadata_ok:
-            stats['metadata_correct'] += 1
-        else:
-            stats['metadata_wrong'] += 1
-
-        df.at[index, 'Metadata Match'] = metadata_ok
-        df.at[index, 'LLM Metadata'] = json.dumps(extracted_metadata) if extracted_metadata else ""
-        df.at[index, 'Expected Metadata'] = json.dumps(expected_metadata) if expected_metadata else ""
-        df.at[index, 'Metadata Error Reason'] = reason if not metadata_ok else ""
-        
+        # ── Write to CSV ──────────────────────────────────────────────────────
+        df.at[index, "Total Score (100)"]      = sc["total_score"]
+        df.at[index, "Adj Entry Score (10)"]   = sc["adj_entry_score"]
+        df.at[index, "Adj Row Score (20)"]     = sc["adj_row_score"]
+        df.at[index, "Edge List Score (30)"]   = sc["edge_list_score"]
+        df.at[index, "Degree Score (30)"]      = sc["deg_score"]
+        df.at[index, "Other Meta Score (10)"]  = sc["meta_score"]
+        df.at[index, "Adj Exact Match"]        = sc["adj_match"]
+        df.at[index, "LLM Adjacency Matrix"]   = matrix_to_string(sc["extracted_matrix"])
+        df.at[index, "Expected Adjacency Matrix"] = matrix_to_string(sc["expected_matrix"])
+        df.at[index, "LLM Edge List"]          = str(sc["extracted_edges"])
+        df.at[index, "Expected Edge List"]     = str(sc["expected_edges"])
+        df.at[index, "LLM Vertex Degrees"]     = str(sc["extracted_degrees"])
+        df.at[index, "Expected Vertex Degrees"] = str(sc["expected_degrees"])
+        df.at[index, "Meta Detail"]            = json.dumps(sc["meta_detail"])
         df.to_csv(LLM_CSV_LOG_FILE, index=False)
 
-    print("\n" + "="*80)
-    print("FINAL STATISTICS")
-    print("="*80)
-    
-    final_stats_text = f"""
-FINAL STATISTICS
-================
+        # ── Build detailed TXT log entry ──────────────────────────────────────
+        sep = "-" * 60
+        entry = [
+            "",
+            "=" * 80,
+            f"GRAPH: {graph_type}/{graph_name}   Attempt: {attempt}",
+            f"TOTAL SCORE: {sc['total_score']:.2f} / 100",
+            "=" * 80,
+            "",
+            "── SCORE BREAKDOWN ─────────────────────────────────────────",
+            f"  Adjacency Entry Score  (10 pts max): {sc['adj_entry_score']:.2f}",
+            f"  Adjacency Row Score    (20 pts max): {sc['adj_row_score']:.2f}",
+            f"  Edge List Score        (30 pts max): {sc['edge_list_score']:.2f}",
+            f"  Vertex Degree Score    (30 pts max): {sc['deg_score']:.2f}",
+            f"  Other Metadata Score   (10 pts max): {sc['meta_score']:.2f}",
+            "",
+            "── ADJACENCY MATRIX ─────────────────────────────────────────",
+            f"  Exact match: {sc['adj_match']}",
+            "",
+            "  LLM output:",
+            _fmt_matrix(sc["extracted_matrix"]),
+            "",
+            "  Expected (ground truth):",
+            _fmt_matrix(sc["expected_matrix"]),
+            "",
+            "── EDGE LIST ────────────────────────────────────────────────",
+            "  LLM output:",
+            _fmt_edges(sc["extracted_edges"]),
+            "",
+            "  Expected (ground truth):",
+            _fmt_edges(sc["expected_edges"]),
+            "",
+            "── VERTEX DEGREES ───────────────────────────────────────────",
+            "  LLM output:",
+            _fmt_degrees(sc["extracted_degrees"]),
+            "",
+            "  Expected (ground truth):",
+            _fmt_degrees(sc["expected_degrees"]),
+            "",
+            "── OTHER METADATA ───────────────────────────────────────────",
+        ]
+        for field, info in sc["meta_detail"].items():
+            status = "✅" if info["ok"] else "❌"
+            entry.append(f"  {status} {field}: LLM={info['llm']}  Expected={info['expected']}")
+        entry.append("")
 
-Total Graphs Processed: {stats['total']}
+        block = "\n".join(entry)
+        judge_log_lines.append(block)
+        print(f"  => {sc['total_score']:.2f}/100  (entry={sc['adj_entry_score']}, row={sc['adj_row_score']}, "
+              f"edge={sc['edge_list_score']}, deg={sc['deg_score']}, meta={sc['meta_score']})")
 
-ADJACENCY MATRIX:
-  ✅ Correct: {stats['adjacency_correct']} ({100*stats['adjacency_correct']//stats['total'] if stats['total'] > 0 else 0}%)
-  ❌ Wrong: {stats['adjacency_wrong']}
-  ⚠️  Error: {stats['adjacency_error']}
+    # ── Final statistics ──────────────────────────────────────────────────────
+    n = len(score_accumulator)
+    avg = sum(score_accumulator) / n if n > 0 else 0.0
+    perfect = sum(1 for s in score_accumulator if s >= 100.0)
+    above80 = sum(1 for s in score_accumulator if s >= 80.0)
 
-GRAPH METADATA:
-  ✅ Correct: {stats['metadata_correct']} ({100*stats['metadata_correct']//stats['total'] if stats['total'] > 0 else 0}%)
-  ❌ Wrong: {stats['metadata_wrong']}
-  ⚠️  Error: {stats['metadata_error']}
-"""
-    
-    if stats.get('failed_adjacency_matrices'):
-        final_stats_text += "\nFAILED ADJACENCY MATRICES (Returned None):\n"
-        for failed in stats['failed_adjacency_matrices']:
-            final_stats_text += f"  - {failed}\n"
-            
-    print(final_stats_text)
-    save_to_log(final_stats_text)
-    print(f"\nLog file: {LLM_LOG_FILE}")
-    save_to_log(f"\n{'='*80}\n")
-    
+    final_block = "\n".join([
+        "",
+        "=" * 80,
+        "FINAL STATISTICS",
+        "=" * 80,
+        f"Total rows judged : {n}",
+        f"Average score     : {avg:.2f} / 100",
+        f"Perfect (100/100) : {perfect}  ({100*perfect//n if n else 0}%)",
+        f"≥ 80 / 100        : {above80}  ({100*above80//n if n else 0}%)",
+        "",
+    ])
+
+    print(final_block)
+    judge_log_lines.append(final_block)
+
+    full_log = "\n".join(judge_log_lines)
+    save_to_log(full_log)
+    print(f"\n📄 Detailed log written to: {LLM_LOG_FILE}")
+
+
 if __name__ == "__main__":
     # Comment out either function as needed
     run_slm_inference()

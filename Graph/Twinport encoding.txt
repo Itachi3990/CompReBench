@@ -1,55 +1,36 @@
-TWINPORT Encoding: A Comprehensive Guide (Vanilla Edition)
-==========================================================
-
 TWINPORT stands for:
 "Topology-Independent Weighted Incidence Network with Port-Oriented Relational Tokens".
 
-It is a novel graph serialization format specifically designed to test how well Large Language Models (LLMs) can perform true "graph reasoning" (like path traversal, cycle detection, and weight aggregation) without losing track of edge directions.
+It is a graph encoding format specifically designed to test how well Large Language Models (LLMs) can perform true "graph reasoning" (like path traversal, cycle detection, and weight aggregation) without losing track of edge directions, and it seems fair to use this encoding method since no LLM has seen this encoding method during training.
 
-Note: The original TWINPORT proposal included "ECC-Anchor Node Encoding" (giving nodes gibberish names like <RA7-KO2-ME> to prevent bias). However, because our benchmark requires the LLM to output a strictly ordered Adjacency Matrix corresponding to original node names (A, B, C, D), we are using the "Vanilla Twin-Port" variant. This drops the ECC-Anchors and simply uses the original node names, but keeps the powerful Port-based traversal.
+Its description has two parts:
 
-Here is a simple, plain-English breakdown of how the Twin-Port Edge Tickets work and why they are so effective.
-
----
-
-1. Twin-Port Edge Tickets (Solving the "Traversal" Problem)
------------------------------------------------------------
-Normally, an edge is written as a simple list: `(A, B, 2.5)` or a sentence: `"A is connected to B with weight 2.5."`
-This is fine for simple questions, but if you ask an LLM to traverse a 5-hop path, it easily gets lost. It forgets which direction the edge went or mixes up weights.
-
-The Solution:
+1. Twin-Port Edge Tickets
 TWINPORT breaks every edge down into a "Ticket" with two "Ports" (half-edges). Every node has its own local port numbers (p01, p02, p03, etc.) for its connections.
 
 Instead of saying "A connects to B", TWINPORT says:
-`EDGE E01  TAIL A@p03  HEAD B@p01  W +2.500`
+`EDGE: E01  TAIL_NODE: A  TAIL_PORT: p03  HEAD_NODE: B  HEAD_PORT: p01  WEIGHT: +2.500`
 
 Translation: 
 - Start at node `A` and exit through its local port `#3`.
 - Travel along edge `E01` (which has a weight of `+2.500`).
 - Arrive at node `B` by entering its local port `#1`.
 
-This makes multi-hop reasoning much easier for an LLM because it acts like explicit pointers. To go from A to B to C, the LLM just follows the explicit port addresses: `A@p03 -> B@p01`, then from `B@p04 -> C@p02`.
 
----
-
-2. The Incidence Ledger (Creating Built-in Redundancy)
-------------------------------------------------------
+2. The Incidence Ledger
 To make sure the LLM has all the local context it needs, TWINPORT provides a "Ledger" under each node. This ledger lists every port that node has, and what is attached to it.
 
-Example Ledger:
+Example Ledger (Directed):
 NODE B
   IN  p01 <- A  [E01]
   OUT p04 -> C  [E02]
 
+Example Ledger (Undirected):
+NODE B
+  UNDIR p01 <-> A  [E01]
+  UNDIR p04 <-> C  [E02]
+
 This creates a powerful internal consistency check. The global "Edge Tickets" and the local "Incidence Ledgers" represent the exact same graph in two different ways. To solve complex graph problems, the LLM can use the global tickets to scan the network, and the local ledgers to see immediate neighbors. 
-
----
-
-Summary: Why is TWINPORT better?
---------------------------------
-1. Direction-Safe: It explicitly labels `TAIL` and `HEAD` (or `END1` and `END2` for undirected graphs), preventing the LLM from accidentally walking backward down a one-way street.
-2. Weight-Safe: Weights are strictly formatted (e.g., `+2.500`), removing language ambiguity.
-3. Pointer-Based Traversal: The `@p01` port addresses act like literal memory pointers, teaching the LLM how to actually "walk" the graph step-by-step rather than just guessing based on textual proximity.
 
 Example:
 
@@ -65,25 +46,26 @@ D C 1
 The twinport encoding of this graph becomes:
 
 GRAPH TYPE: DIRECTED
-NODES: 4
-EDGES: 4
 
 EDGE TICKETS:
-  EDGE: E01  TAIL: A@p01  HEAD: B@p01  WEIGHT: +7.000
-  EDGE: E02  TAIL: A@p02  HEAD: C@p01  WEIGHT: +7.000
-  EDGE: E03  TAIL: B@p02  HEAD: C@p02  WEIGHT: +3.000
-  EDGE: E04  TAIL: D@p01  HEAD: C@p03  WEIGHT: +1.000
+  EDGE: E01  TAIL_NODE: A  TAIL_PORT: p01  HEAD_NODE: B  HEAD_PORT: p01  WEIGHT: +7.000
+  EDGE: E02  TAIL_NODE: A  TAIL_PORT: p02  HEAD_NODE: C  HEAD_PORT: p01  WEIGHT: +7.000
+  EDGE: E03  TAIL_NODE: B  TAIL_PORT: p02  HEAD_NODE: C  HEAD_PORT: p02  WEIGHT: +3.000
+  EDGE: E04  TAIL_NODE: D  TAIL_PORT: p01  HEAD_NODE: C  HEAD_PORT: p03  WEIGHT: +1.000
 
 INCIDENCE LEDGER:
-  NODE A
+  NODE A:
   OUT p01 -> B  [E01]
   OUT p02 -> C  [E02]
-  NODE B
+  
+  NODE B:
   IN  p01 <- A  [E01]
   OUT p02 -> C  [E03]
-  NODE C
+  
+  NODE C:
   IN  p01 <- A  [E02]
   IN  p02 <- B  [E03]
   IN  p03 <- D  [E04]
-  NODE D
+  
+  NODE D:
   OUT p01 -> C  [E04]

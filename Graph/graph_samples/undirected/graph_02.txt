@@ -1,0 +1,10 @@
+UNDIRECTED
+5 8
+A B 2
+A C 1
+A E 1
+B C -3
+B D -4
+C D 20
+C E -5
+D E 8

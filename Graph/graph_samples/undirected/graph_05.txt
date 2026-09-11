@@ -1,0 +1,12 @@
+UNDIRECTED
+7 10
+A B -1
+A C 1
+A D 15
+A G -10
+B C 20
+C D -1
+D E 20
+E F 8
+E G 1
+F G 10

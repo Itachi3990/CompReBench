@@ -1,0 +1,18 @@
+DIRECTED
+11 16
+A B -10
+A G 4
+B C 15
+C D -1
+C J -10
+D E -10
+E F 1
+F C 1
+F G 5
+G H 3
+H F -3
+H I -4
+I J 7
+J K 15
+K A 3
+K E -2

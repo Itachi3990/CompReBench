@@ -153,21 +153,21 @@ GRAPH_ALGORITHMS_TAXONOMY = {
 # Prompt template
 PROBLEM_PROMPT = """DO NOT USE THE INTERNET.
 
-Consider the following problem scenario that needs to be mapped to a graph problem:
+Your task is to map a given problem scenario to a graph problem category and algorithm. Decide which category the problem fits in, and which algorithm you would use to solve the problem. Do NOT solve the problem itself.
+
+Use deterministic formatting and do not add extra labels or commentary. An example of the exact output format is given below (DO NOT COPY THESE VALUES, this is just an example to show the output format):
+
+PROBLEM CATEGORY: Shortest Path
+ALGORITHM NAME: Dijkstra
+EXPLANATION OF ALGORITHM CHOICE: The problem requires finding the minimum cost route on a graph with non-negative edge weights.
+
+Important instructions:
+- The fields PROBLEM CATEGORY, ALGORITHM NAME, and EXPLANATION OF ALGORITHM CHOICE are mandatory and must remain in the output. 
+- Whatever algorithm(s) you choose, clearly state the algorithm name(s) and provide a brief explanation (10-30 words) of why that algorithm is appropriate for this problem.
+
+Now, consider the actual problem scenario described below. Provide ONLY the extracted metadata for THIS problem below, using the exact output format shown above:
 
 {problem_description}
-
-Decide which algorithm(s) you would use to solve this problem. Do NOT solve the problem itself.
-
-Then provide the exact algorithm answer below. Use deterministic formatting and do not add extra labels or commentary.
-
-Your output must EXACTLY follow this format, in this exact order:
-
-ALGORITHM NAME: <ALGORITHM NAME>
-EXPLANATION OF ALGORITHM CHOICE: <EXPLANATION>
-
-Important:
-- The fields ALGORITHM NAME and EXPLANATION OF ALGORITHM CHOICE are mandatory and must remain in the output. Whatever algorithm(s) you choose, clearly state the algorithm name(s) and provide a brief explanation (10-30 words) of why that algorithm is appropriate for this problem.
 """
 
 # ============================================================================
@@ -207,6 +207,13 @@ def clear_log():
     with open(LLM_CSV_LOG_FILE, "w", encoding="utf-8") as f:
         f.write("")
 
+def extract_problem_category_from_response(response):
+    """Extract problem category from LLM response."""
+    match = re.search(r"PROBLEM CATEGORY:\s*(.+?)(?:\n|$)", response)
+    if match:
+        return match.group(1).strip()
+    return None
+
 def extract_algorithm_from_response(response):
     """Extract algorithm name from LLM response."""
     match = re.search(r"ALGORITHM NAME:\s*(.+?)(?:\n|$)", response)
@@ -221,7 +228,7 @@ def extract_explanation_from_response(response):
         return match.group(1).strip()
     return None
 
-def grade_algorithm_choice(algo_name, explanation, problem_category):
+def grade_algorithm_choice(extracted_category, algo_name, explanation, true_category):
     """
     Grade the LLM's algorithm name against known valid algorithms for the
     given problem category, using LLM as a judge.
@@ -231,15 +238,16 @@ def grade_algorithm_choice(algo_name, explanation, problem_category):
     if not algo_name:
         return 0, None, "No algorithm extracted"
 
-    valid_algos = GRAPH_ALGORITHMS.get(problem_category, [])
+    valid_algos = GRAPH_ALGORITHMS.get(true_category, [])
     if not valid_algos:
         return 0, None, "No valid algorithms defined for this category"
 
     prompt = f'''
 You are an expert computer science grader evaluating an LLM's proposed graph algorithm for a specific problem.
-Problem Category: {problem_category}
+True Problem Category: {true_category}
 Valid Algorithms (Gold Standard): {valid_algos}
 
+Proposed Category from LLM: {extracted_category}
 Proposed Algorithm from LLM: {algo_name}
 LLM's Explanation: {explanation}
 
@@ -351,22 +359,21 @@ def run_slm_inference():
         print(f"\n  Total problems selected: {total_problems}")
         
         combinations = []
-        for category, problem_paths in selected_problems.items():
-            for problem_path in problem_paths:
-                combinations.append({
-                    'problem_category': category,
-                    'problem_path': problem_path,
-                })
+        for attempt in range(1, NUMBER_OF_PROMPTS_PER_PROBLEM_SCENARIO + 1):
+            for category, problem_paths in selected_problems.items():
+                for problem_path in problem_paths:
+                    combinations.append({
+                        'problem_category': category,
+                        'problem_path': problem_path,
+                        'attempt': attempt,
+                    })
         
-        print(f"  Total combinations: {len(combinations)}")
+        print(f"  Total prompts to be sent: {len(combinations)}")
         print(f"  MAX_PROMPTS_COUNT: {MAX_PROMPTS_COUNT if MAX_PROMPTS_COUNT else 'None (all)'}")
         
         if MAX_PROMPTS_COUNT:
-            combinations = random.sample(
-                combinations,
-                min(MAX_PROMPTS_COUNT, len(combinations))
-            )
-            print(f"  Limited to: {len(combinations)} combinations")
+            combinations = combinations[:MAX_PROMPTS_COUNT]
+            print(f"  Limited to: {len(combinations)} prompts")
             
         start_idx = 0
         
@@ -394,42 +401,45 @@ def run_slm_inference():
 
         print(prompt) # just print the raw prompt
         
-        for attempt in range(1, NUMBER_OF_PROMPTS_PER_PROBLEM_SCENARIO + 1):
-            print(f"\n--- Attempt {attempt} ---")
-            start_time = time.time()
-            response = call_model(prompt)
-            end_time = time.time()
-            duration = round(end_time - start_time, 2)
+        attempt = combo.get('attempt', 1)
+        print(f"\n--- Attempt {attempt} ---")
+        start_time = time.time()
+        response = call_model(prompt)
+        end_time = time.time()
+        duration = round(end_time - start_time, 2)
 
-            print("LLM's Complete, Unedited Response:", response)
-            print("-" * 80)
+        print("LLM's Complete, Unedited Response:", response)
+        print("-" * 80)
 
-            extracted_algo = extract_algorithm_from_response(response)
-            extracted_explanation = extract_explanation_from_response(response)
-            valid_algos_for_category = GRAPH_ALGORITHMS.get(problem_category, [])
+        extracted_category = extract_problem_category_from_response(response)
+        extracted_algo = extract_algorithm_from_response(response)
+        extracted_explanation = extract_explanation_from_response(response)
+        valid_algos_for_category = GRAPH_ALGORITHMS.get(problem_category, [])
 
-            save_to_log(f"\\n[{idx} - Attempt {attempt}] {problem_category}/{problem_name}")
-            save_to_log(f"  LLM choice: {extracted_algo}\\n")
-            save_to_log(f"  Valid algorithms: {valid_algos_for_category}\\n")
+        save_to_log(f"\\n[{idx} - Attempt {attempt}] {problem_category}/{problem_name}")
+        save_to_log(f"  LLM category: {extracted_category}\\n")
+        save_to_log(f"  LLM choice: {extracted_algo}\\n")
+        save_to_log(f"  Valid algorithms: {valid_algos_for_category}\\n")
 
-            csv_row = {
-                "Attempt": attempt,
-                "Problem Category": problem_category,
-                "Problem Name": problem_name,
-                "Is Distractor": "Yes" if "distractor" in problem_name.lower() else "No",
-                "Execution Time (s)": duration,
-                "LLM Algorithm Choice": extracted_algo if extracted_algo else "",
-                "Valid Algorithms": json.dumps(valid_algos_for_category),
-                "LLM Explanation": extracted_explanation if extracted_explanation else "",
-                "Algorithm Match Score": "",
-                "Matched Algorithm Name": "",
-                "Judge Justification": "",
-                "Prompt Length (chars)": len(prompt),
-                "Response Length (chars)": len(response),
-                "Raw Response": response
-            }
-            fieldnames = list(csv_row.keys())
-            log_to_csv(LLM_CSV_LOG_FILE, csv_row, fieldnames)
+        csv_row = {
+            "Attempt": attempt,
+            "Problem Category": problem_category,
+            "Problem Name": problem_name,
+            "Is Distractor": "Yes" if "distractor" in problem_name.lower() else "No",
+            "Execution Time (s)": duration,
+            "LLM Problem Category": extracted_category if extracted_category else "",
+            "LLM Algorithm Choice": extracted_algo if extracted_algo else "",
+            "Valid Algorithms": json.dumps(valid_algos_for_category),
+            "LLM Explanation": extracted_explanation if extracted_explanation else "",
+            "Algorithm Match Score": "",
+            "Matched Algorithm Name": "",
+            "Judge Justification": "",
+            "Prompt Length (chars)": len(prompt),
+            "Response Length (chars)": len(response),
+            "Raw Response": response
+        }
+        fieldnames = list(csv_row.keys())
+        log_to_csv(LLM_CSV_LOG_FILE, csv_row, fieldnames)
 
         state_to_save = {
             "combinations": combinations,
@@ -485,10 +495,11 @@ def run_llm_as_a_judge():
             print(f"Judging row {index+1}/{total_rows}: {row['Problem Category']}/{row['Problem Name']} Attempt {row['Attempt']}")
             
             problem_category = row['Problem Category']
+            extracted_category = row['LLM Problem Category'] if 'LLM Problem Category' in row and pd.notna(row['LLM Problem Category']) else ""
             extracted_algo = row['LLM Algorithm Choice'] if pd.notna(row['LLM Algorithm Choice']) else ""
             extracted_explanation = row['LLM Explanation'] if pd.notna(row['LLM Explanation']) else ""
             
-            score, matched_name, justification = grade_algorithm_choice(extracted_algo, extracted_explanation, problem_category)
+            score, matched_name, justification = grade_algorithm_choice(extracted_category, extracted_algo, extracted_explanation, problem_category)
             
             df.at[index, 'Algorithm Match Score'] = score
             df.at[index, 'Matched Algorithm Name'] = matched_name if matched_name else ""

@@ -1,0 +1,17 @@
+DIRECTED
+6 15
+A B 10
+A E -8
+B C 2
+B D 10
+C D 10
+C F 2
+D A 1
+D E 2
+E B -8
+E C -3
+E D -4
+E F -5
+F A 5
+F B 20
+F D 8

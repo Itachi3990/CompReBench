@@ -52,10 +52,14 @@ class Graph:
             self._vertices.append(vertex)
             self.vertices = self._vertices
 
-    def add_edge(self, u: str, v: str, weight: int = 1) -> None:
+    def add_edge(self, u: str, v: str, weight = 1) -> None:
         u = str(u)
         v = str(v)
-        weight = int(weight)
+        try:
+            f_val = float(weight)
+            weight = int(f_val) if f_val.is_integer() else f_val
+        except (ValueError, TypeError):
+            weight = 1
 
         self.add_vertex(u)
         self.add_vertex(v)
@@ -70,7 +74,7 @@ class Graph:
             self._edge_list.append((u, v, weight))
             self.edges = self._edge_list
 
-    def get_adjacency_matrix(self) -> List[List[int]]:
+    def get_adjacency_matrix(self) -> List[List]:
         """Return the adjacency matrix in a natural vertex ordering."""
         ordered_vertices = sorted(self._adjacency.keys(), key=self._natural_sort_key)
         index_by_vertex = {vertex: i for i, vertex in enumerate(ordered_vertices)}
@@ -82,7 +86,7 @@ class Graph:
                 if neighbor not in index_by_vertex:
                     continue
                 column_index = index_by_vertex[neighbor]
-                matrix[row_index][column_index] = int(weight)
+                matrix[row_index][column_index] = weight
 
         return matrix
 
@@ -286,6 +290,142 @@ class Graph:
     def get_degree_summary(self) -> Dict[str, Dict[str, int]]:
         return self.get_indegree_and_outdegree_of_every_vertex()
 
+    def get_edge_list_score(self, predicted_edges: List[Tuple]) -> float:
+        """
+        Score the predicted edge list against the ground truth with partial credit (0.0 – 1.0).
+
+        Scoring logic (per-edge, then averaged):
+          - Each ground-truth edge that appears correctly in the prediction gets full credit (1.0).
+          - A ground-truth edge whose endpoint pair matches but whose weight is wrong gets half
+            credit (0.5).
+          - A ground-truth edge that is entirely missing gets no credit (0.0).
+          - Extra (hallucinated) edges in the prediction are penalised by subtracting 1 credit per spurious edge from the total earned.  The final score is clamped to [0, 1].
+
+        All comparisons normalise edge representations:
+          - Strings are stripped and lower-cased for vertex names.
+          - Weights are compared as rounded integers (int(round(w))).
+          - For undirected graphs the edge (u, v) and (v, u) are treated as identical.
+        """
+        if predicted_edges is None:
+            return 0.0
+
+        def _normalise_edge(e):
+            u = str(e[0]).strip().lower()
+            v = str(e[1]).strip().lower()
+            try:
+                f_val = float(e[2])
+                w = int(f_val) if f_val.is_integer() else round(f_val, 4)
+            except Exception:
+                w = 0
+            if not self._directed and u > v:
+                u, v = v, u
+            return (u, v, w)
+
+        def _endpoint_key(e):
+            u, v, _ = _normalise_edge(e)
+            return (u, v)
+
+        gt_edges = []
+        for edge in self.get_edge_list():
+            gt_edges.append(_normalise_edge(edge))
+
+        pred_edges = []
+        for edge in predicted_edges:
+            try:
+                pred_edges.append(_normalise_edge(edge))
+            except Exception:
+                pass
+
+        if not gt_edges:
+            # No edges to score; penalise hallucinations
+            return max(0.0, 1.0 - len(pred_edges))
+
+        pred_set_full  = {}   # (u,v,w) -> count
+        pred_set_pair  = {}   # (u,v)   -> list of weights
+        for e in pred_edges:
+            pred_set_full[e] = pred_set_full.get(e, 0) + 1
+            key = (e[0], e[1])
+            pred_set_pair.setdefault(key, []).append(e[2])
+
+        earned = 0.0
+        for gt_edge in gt_edges:
+            pair_key = (gt_edge[0], gt_edge[1])
+            if pred_set_full.get(gt_edge, 0) > 0:
+                earned += 1.0
+                pred_set_full[gt_edge] -= 1
+            elif pair_key in pred_set_pair and pred_set_pair[pair_key]:
+                # Endpoint match, wrong weight → half credit
+                earned += 0.5
+                pred_set_pair[pair_key].pop(0)
+            # else: completely missing → 0 credit
+
+        # Penalise spurious edges
+        gt_set_full = {}
+        for e in gt_edges:
+            gt_set_full[e] = gt_set_full.get(e, 0) + 1
+
+        spurious = 0
+        for pred_edge in pred_edges:
+            if gt_set_full.get(pred_edge, 0) > 0:
+                gt_set_full[pred_edge] -= 1
+            else:
+                spurious += 1
+
+        total_gt = len(gt_edges)
+        raw_score = (earned - spurious) / total_gt
+        return max(0.0, min(1.0, raw_score))
+
+    def get_vertex_degrees_score(self, predicted_degrees: Dict) -> float:
+        """
+        Score the predicted vertex degree dictionary against ground truth with partial
+        credit (0.0 – 1.0).
+
+        Scoring logic:
+          - For each ground-truth vertex:
+              * Both in_degree and out_degree correct → 1.0 vertex credit.
+              * Only one of them correct               → 0.5 vertex credit.
+              * Both wrong or vertex missing           → 0.0 vertex credit.
+          - Extra (hallucinated) vertices in the prediction are penalised by subtracting
+            0.5 credit per spurious vertex.
+          - Final score is (sum of vertex credits) / (number of ground-truth vertices),
+            clamped to [0, 1].
+        """
+        if predicted_degrees is None:
+            return 0.0
+
+        expected_degrees = self.get_indegree_and_outdegree_of_every_vertex()
+        if not expected_degrees:
+            return 1.0 if not predicted_degrees else 0.0
+
+        def _int(v):
+            try:
+                return int(round(float(v)))
+            except Exception:
+                return None
+
+        earned = 0.0
+        for vertex, exp_vals in expected_degrees.items():
+            exp_in  = _int(exp_vals.get("in_degree",  0))
+            exp_out = _int(exp_vals.get("out_degree", 0))
+
+            pred_vals = predicted_degrees.get(vertex, None)
+            if pred_vals is None:
+                continue  # missing vertex → 0 credit
+
+            pred_in  = _int(pred_vals.get("in_degree",  None))
+            pred_out = _int(pred_vals.get("out_degree", None))
+
+            correct = (pred_in == exp_in) + (pred_out == exp_out)
+            earned += correct * 0.5   # 0, 0.5, or 1.0
+
+        # Penalise hallucinated vertices
+        spurious = sum(
+            1 for v in predicted_degrees
+            if v not in expected_degrees
+        )
+        raw = (earned - 0.5 * spurious) / len(expected_degrees)
+        return max(0.0, min(1.0, raw))
+
     @classmethod
     def from_adjacency_dict(cls, graph_dict: Dict[str, Dict[str, int]], directed: Optional[bool] = None):
         graph = cls(directed=bool(directed))
@@ -293,7 +433,7 @@ class Graph:
             graph.add_vertex(u)
             for v, weight in neighbors.items():
                 graph.add_vertex(v)
-                graph.add_edge(u, v, int(weight))
+                graph.add_edge(u, v, weight)
         return graph
 
     @classmethod
@@ -317,7 +457,14 @@ class Graph:
             if len(tokens) < 2:
                 continue
             u, v = tokens[0], tokens[1]
-            weight = int(tokens[2]) if len(tokens) >= 3 else 1
+            if len(tokens) >= 3:
+                try:
+                    f_val = float(tokens[2])
+                    weight = int(f_val) if f_val.is_integer() else f_val
+                except ValueError:
+                    weight = 1
+            else:
+                weight = 1
             graph.add_edge(u, v, weight)
         return graph
 
@@ -394,8 +541,6 @@ class Graph:
         # ── Step 2: assemble the output string ────────────────────────────────────
         lines = []
         lines.append(f"GRAPH TYPE: {graph_type}")
-        lines.append(f"NODES: {len(vertices)}")
-        lines.append(f"EDGES: {num_edges}")
         lines.append("")
         lines.append("EDGE TICKETS:")
         for ticket in edge_tickets:
@@ -403,7 +548,7 @@ class Graph:
         lines.append("")
         lines.append("INCIDENCE LEDGER:")
         for v in vertices:
-            lines.append(f"  NODE {v}")
+            lines.append(f"\n  NODE {v}:")
             if ledger[v]:
                 for entry in ledger[v]:
                     lines.append(entry)
