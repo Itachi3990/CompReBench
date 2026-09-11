@@ -492,7 +492,9 @@ class Graph:
         # ── Step 1: assign random topology-independent port numbers ───────────────
         port_counter = {v: 1 for v in vertices}
         edge_tickets = []
-        ledger = {v: [] for v in vertices}
+        ledger_out = {v: [] for v in vertices}
+        ledger_in = {v: [] for v in vertices}
+        ledger_undir = {v: [] for v in vertices}
         seen_undirected = set()
 
         edge_num = 1
@@ -515,26 +517,20 @@ class Graph:
                 edge_id = f"E{edge_num:02d}"
                 edge_num += 1
 
-                w_str = f"+{weight:.3f}" if weight >= 0 else f"{weight:.3f}"
+                try:
+                    f_val = float(weight)
+                    w_str = str(int(f_val)) if f_val.is_integer() else f"{f_val:.3f}".rstrip('0').rstrip('.')
+                except (ValueError, TypeError):
+                    w_str = str(weight)
 
                 if self.directed:
-                    ticket = (
-                        f"EDGE: {edge_id}  "
-                        f"TAIL_NODE: {u}  TAIL_PORT: p{port_u:02d}  "
-                        f"HEAD_NODE: {v}  HEAD_PORT: p{port_v:02d}  "
-                        f"WEIGHT: {w_str}"
-                    )
-                    ledger[u].append(f"  OUT p{port_u:02d} -> {v}  [{edge_id}]")
-                    ledger[v].append(f"  IN  p{port_v:02d} <- {u}  [{edge_id}]")
+                    ticket = f"{edge_id}: {u}:p{port_u:02d} -> {v}:p{port_v:02d} (wt: {w_str})"
+                    ledger_out[u].append(f"p{port_u:02d} -> {v} ({edge_id})")
+                    ledger_in[v].append(f"p{port_v:02d} <- {u} ({edge_id})")
                 else:
-                    ticket = (
-                        f"EDGE: {edge_id}  "
-                        f"NODE1: {u}  PORT1: p{port_u:02d}  "
-                        f"NODE2: {v}  PORT2: p{port_v:02d}  "
-                        f"WEIGHT: {w_str}"
-                    )
-                    ledger[u].append(f"  UNDIR p{port_u:02d} <-> {v}  [{edge_id}]")
-                    ledger[v].append(f"  UNDIR p{port_v:02d} <-> {u}  [{edge_id}]")
+                    ticket = f"{edge_id}: {u}:p{port_u:02d} <-> {v}:p{port_v:02d} (wt: {w_str})"
+                    ledger_undir[u].append(f"p{port_u:02d} <-> {v} ({edge_id})")
+                    ledger_undir[v].append(f"p{port_v:02d} <-> {u} ({edge_id})")
 
                 edge_tickets.append(ticket)
 
@@ -542,18 +538,27 @@ class Graph:
         lines = []
         lines.append(f"GRAPH TYPE: {graph_type}")
         lines.append("")
-        lines.append("INCIDENCE LEDGER:")
-        for v in vertices:
-            lines.append(f"\n  NODE {v}:")
-            if ledger[v]:
-                for entry in ledger[v]:
-                    lines.append(entry)
-            else:
-                lines.append("    (isolated)")
-        lines.append("")
         lines.append("EDGE TICKETS:")
         for ticket in edge_tickets:
             lines.append(f"  {ticket}")
+        lines.append("")
+        lines.append("INCIDENCE LEDGER:")
+        for v in vertices:
+            if self.directed:
+                parts = []
+                if ledger_out[v]:
+                    parts.append(f"OUT [{', '.join(ledger_out[v])}]")
+                if ledger_in[v]:
+                    parts.append(f"IN [{', '.join(ledger_in[v])}]")
+                if parts:
+                    lines.append(f"  NODE {v}: {' | '.join(parts)}")
+                else:
+                    lines.append(f"  NODE {v}: (isolated)")
+            else:
+                if ledger_undir[v]:
+                    lines.append(f"  NODE {v}: [{', '.join(ledger_undir[v])}]")
+                else:
+                    lines.append(f"  NODE {v}: (isolated)")
         lines.append("")
 
         return "\n".join(lines)

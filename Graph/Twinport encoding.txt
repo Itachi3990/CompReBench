@@ -1,36 +1,36 @@
 TWINPORT stands for:
 "Topology-Independent Weighted Incidence Network with Port-Oriented Relational Tokens".
 
-It is a graph encoding format specifically designed to test how well Large Language Models (LLMs) can perform true "graph reasoning" (like path traversal, cycle detection, and weight aggregation) without losing track of edge directions, and it seems fair to use this encoding method since no LLM has seen this encoding method during training.
+It is a graph encoding format specifically designed to test how well Large Language Models (LLMs) and Small Language Models (SLMs) can perform true "graph reasoning" (like path traversal, cycle detection, and weight aggregation) without losing track of edge directions, while remaining token-efficient to support large, complex graphs within standard context windows.
 
 Its description has two parts:
 
 1. Twin-Port Edge Tickets
-TWINPORT breaks every edge down into a "Ticket" with two "Ports" (half-edges). Every node has its own local port numbers (p01, p02, p03, etc.) for its connections.
+TWINPORT breaks every edge down into a compact "Ticket" with two "Ports" (half-edges). Every node has its own local port numbers (p01, p02, p03, etc.) for its connections.
 
-Instead of saying "A connects to B", TWINPORT says:
-`EDGE: E01  TAIL_NODE: A  TAIL_PORT: p03  HEAD_NODE: B  HEAD_PORT: p01  WEIGHT: +2.500`
+Directed format:
+`E01: A:p03 -> B:p01 (wt: 2.5)`
+
+Undirected format:
+`E01: A:p03 <-> B:p01 (wt: 2.5)`
 
 Translation: 
-- Start at node `A` and exit through its local port `#3`.
-- Travel along edge `E01` (which has a weight of `+2.500`).
-- Arrive at node `B` by entering its local port `#1`.
+- Start at node `A` and exit through its local port `p03`.
+- Travel along edge `E01` (which has weight `2.5`).
+- Arrive at node `B` by entering its local port `p01`.
 
 
 2. The Incidence Ledger
-To make sure the LLM has all the local context it needs, TWINPORT provides a "Ledger" under each node. This ledger lists every port that node has, and what is attached to it.
+To make sure the model has all the local context it needs, TWINPORT provides a grouped "Ledger" under each node. This ledger lists every port connection attached to that node.
 
 Example Ledger (Directed):
-NODE B
-  IN  p01 <- A  [E01]
-  OUT p04 -> C  [E02]
+NODE B: OUT [p04 -> C (E02)] | IN [p01 <- A (E01)]
 
 Example Ledger (Undirected):
-NODE B
-  UNDIR p01 <-> A  [E01]
-  UNDIR p04 <-> C  [E02]
+NODE B: [p01 <-> A (E01), p04 <-> C (E02)]
 
-This creates a powerful internal consistency check. The global "Edge Tickets" and the local "Incidence Ledgers" represent the exact same graph in two different ways. To solve complex graph problems, the LLM can use the global tickets to scan the network, and the local ledgers to see immediate neighbors. 
+This creates a powerful internal consistency check. The global "Edge Tickets" and the local "Incidence Ledgers" represent the exact same graph in two complementary ways: global traversal and local neighborhood querying.
+
 
 Example:
 
@@ -43,29 +43,18 @@ A C 7
 B C 3
 D C 1
 
-The twinport encoding of this graph becomes:
+The compact TWINPORT encoding of this graph is:
 
 GRAPH TYPE: DIRECTED
 
 EDGE TICKETS:
-  EDGE: E01  TAIL_NODE: A  TAIL_PORT: p01  HEAD_NODE: B  HEAD_PORT: p01  WEIGHT: +7.000
-  EDGE: E02  TAIL_NODE: A  TAIL_PORT: p02  HEAD_NODE: C  HEAD_PORT: p01  WEIGHT: +7.000
-  EDGE: E03  TAIL_NODE: B  TAIL_PORT: p02  HEAD_NODE: C  HEAD_PORT: p02  WEIGHT: +3.000
-  EDGE: E04  TAIL_NODE: D  TAIL_PORT: p01  HEAD_NODE: C  HEAD_PORT: p03  WEIGHT: +1.000
+  E01: A:p01 -> B:p01 (wt: 7)
+  E02: A:p02 -> C:p01 (wt: 7)
+  E03: B:p02 -> C:p02 (wt: 3)
+  E04: D:p01 -> C:p03 (wt: 1)
 
 INCIDENCE LEDGER:
-  NODE A:
-  OUT p01 -> B  [E01]
-  OUT p02 -> C  [E02]
-  
-  NODE B:
-  IN  p01 <- A  [E01]
-  OUT p02 -> C  [E03]
-  
-  NODE C:
-  IN  p01 <- A  [E02]
-  IN  p02 <- B  [E03]
-  IN  p03 <- D  [E04]
-  
-  NODE D:
-  OUT p01 -> C  [E04]
+  NODE A: OUT [p01 -> B (E01), p02 -> C (E02)]
+  NODE B: OUT [p02 -> C (E03)] | IN [p01 <- A (E01)]
+  NODE C: IN [p01 <- A (E02), p02 <- B (E03), p03 <- D (E04)]
+  NODE D: OUT [p01 -> C (E04)]

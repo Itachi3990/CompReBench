@@ -90,15 +90,13 @@ def call_model(prompt: str) -> str:
 # Prompt template (modular, easily replaceable)
 TWINPORT_EXPLANATION = """Understanding Twin-Port Encoding:
 1. The graph consists of Vertices (Nodes) and Edges. Node names are plain strings (e.g., A, B, P, Q, V1, V2, V50 etc).
-2. EDGE TICKETS explicitly define each edge:
-   - "EDGE: E01" means the edge ID is E01.
-   - For DIRECTED graphs: "TAIL_NODE: A" and "HEAD_NODE: B" means the directed edge goes from vertex A to vertex B.
-   - For UNDIRECTED graphs: "NODE1: A" and "NODE2: B" means there is an undirected edge between vertex A and vertex B.
-   - "TAIL_PORT: p01", "HEAD_PORT: p01", "PORT1: p02", "PORT2: p03" etc. refer to local port addresses on the vertices (which act as explicit memory pointers). You only need to extract the actual node names (e.g. A, B, V1, V2, V45, V50 etc) to build the graph structure.
-   - "WEIGHT: +7.000" specifies the edge weight.
+2. EDGE TICKETS explicitly define each edge with local port addresses:
+   - For DIRECTED graphs: "E01: A:p01 -> B:p01 (wt: 7)" means directed edge E01 goes from node A (port p01) to node B (port p01) with weight 7.
+   - For UNDIRECTED graphs: "E01: A:p01 <-> B:p01 (wt: 7)" means an undirected edge E01 connects node A (port p01) and node B (port p01) with weight 7.
+   - "p01", "p02", etc. refer to local port addresses on the vertices (which act as explicit memory pointers). You only need to extract the actual node names (e.g. A, B, V1, V2, V45, V50 etc) to build the graph structure.
 3. INCIDENCE LEDGER shows the same graph from a node-centric view:
-   - For DIRECTED graphs: Under "NODE A", an entry like "OUT p01 -> B [E01]" means vertex A has an outgoing edge E01 to vertex B. An entry like "IN p03 <- D [E04]" means vertex A has an incoming edge E04 from vertex D.
-   - For UNDIRECTED graphs: Under "NODE A", an entry like "UNDIR p01 <-> B [E01]" means there is an undirected edge E01 connecting vertex A and vertex B.
+   - For DIRECTED graphs: Under "NODE A:", "OUT [p01 -> B (E01)]" indicates outgoing edges from A, and "IN [p03 <- D (E04)]" indicates incoming edges to A.
+   - For UNDIRECTED graphs: Under "NODE A:", "[p01 <-> B (E01)]" indicates undirected edges incident to A.
 """
 
 STRUCTURE_PROMPT = """DO NOT USE THE INTERNET.
@@ -108,20 +106,21 @@ Your task is to extract the exact graph metadata based on the provided graph des
 Use deterministic formatting (as shown below) and do not add extra labels or commentary.
 An example of the exact output format (DO NOT COPY THESE VALUES, it is only an example output format) for a hypothetical random graph with 3 edges and 3 vertices is given below:
 
-ADJACENCY MATRIX: [[0, 1, 0], [0, 0, 3], [2, 0, 0]]
 IS_DIRECTED: True
 NUMBER_OF_VERTICES: 3
 NUMBER_OF_EDGES: 3
 HAS_SELF_LOOPS: False
 EDGE_LIST: [["A", "B", 1], ["B", "C", 3], ["C", "A", 2]]
 VERTEX_DEGREES: {{"A": {{"in_degree": 1, "out_degree": 1}}, "B": {{"in_degree": 1, "out_degree": 1}}, "C": {{"in_degree": 1, "out_degree": 1}}}}
+ADJACENCY MATRIX: [[0, 1, 0], [0, 0, 3], [2, 0, 0]]
 
 Important instructions:
 - Use Python literal formatting for all structured values.
 - Boolean values must be written as True or False.
 - EDGE_LIST must be a list of [source, destination, weight] triples.
 - VERTEX_DEGREES must map each vertex to a dictionary with in_degree and out_degree keys.
-- ADJACENCY MATRIX MUST be an N x N matrix (2D list) where N is NUMBER_OF_VERTICES. It MUST have exactly N rows and N columns.
+- ADJACENCY MATRIX MUST be an N x N matrix (2D list) where N is NUMBER_OF_VERTICES. It MUST have exactly N rows and N columns (e.g. 4x4 if N=4, 5x5 if N=5). DO NOT default to 3x3 unless N=3.
+- In ADJACENCY MATRIX, row i and column j correspond to the i-th and j-th vertices in sorted order. If there is an edge from vertex i to vertex j, entry [i][j] is the edge weight, otherwise 0.
 - For undirected graphs, in_degree and out_degree should be equal to the undirected degree.
 - Sort the EDGE_LIST and VERTEX_DEGREES entries in a deterministic vertex order before writing them.
 
@@ -341,6 +340,7 @@ def run_slm_inference():
         except Exception as e:
             print(f"  ❌ ERROR loading progress file: {e}. Starting fresh.")
             
+    unjudged_graphs = state.get("unjudged_graphs", []) if state else []
     if state:
         combinations = state.get("combinations", [])
         start_idx = state.get("next_idx", 0)
@@ -429,10 +429,18 @@ def run_slm_inference():
         
         graph = Graph.from_file(graph_filepath, directed=(graph_type == "directed"))
         
+        # Determine encoding method and build prompt
+        encoding_method = "twinport" if USE_TWINPORT else "incident"
+        fallback_used = False
+        inference_success = False
+        error_msg = ""
+        
         if USE_TWINPORT:
             graph_description = graph.twinport_description()
+            explanation = "\n" + TWINPORT_EXPLANATION
         else:
             graph_description = graph.incident_description()
+            explanation = ""
         
         if not graph_description:
             print(f"  ❌ ERROR: Failed to load graph")
@@ -441,29 +449,64 @@ def run_slm_inference():
             continue
         
         prompt = STRUCTURE_PROMPT.format(
-            encoding_explanation="\n" + TWINPORT_EXPLANATION if USE_TWINPORT else "",
+            encoding_explanation=explanation,
             graph_description=graph_description,
         )
 
-        print(prompt) # just print the raw prompt
+        print(prompt) # print prompt to console
         
         attempt = combo.get('attempt', 1)
         start_time = time.time()
         try:
             response = call_model(prompt)
+            inference_success = True
             print("LLM's Complete, Unedited Response:", response)
             print("-" * 80)
         except Exception as e:
-            response = f"ERROR: {e}"
-            print(f"  ❌ Inference failed: {e}")
-            print("-" * 80)
+            error_msg = str(e)
+            print(f"  ❌ {encoding_method.capitalize()} inference failed: {e}")
+
+            # If twinport failed, fall back to incident encoding even if USE_TWINPORT is True
+            if USE_TWINPORT:
+                print(f"  🔄 Retrying with INCIDENT encoding method for {graph_type}/{graph_name}...")
+                fallback_desc = graph.incident_description()
+                fallback_prompt = STRUCTURE_PROMPT.format(
+                    encoding_explanation="",
+                    graph_description=fallback_desc,
+                )
+                try:
+                    response = call_model(fallback_prompt)
+                    inference_success = True
+                    fallback_used = True
+                    encoding_method = "incident (fallback)"
+                    prompt = fallback_prompt
+                    print("  ✅ Incident encoding fallback succeeded! LLM Response:", response)
+                    print("-" * 80)
+                except Exception as fallback_e:
+                    error_msg = f"Twinport failed ({e}) | Incident fallback failed ({fallback_e})"
+                    response = f"ERROR: {error_msg}"
+                    print(f"  ❌ Incident encoding fallback ALSO failed: {fallback_e}")
+                    print("-" * 80)
+            else:
+                response = f"ERROR: {error_msg}"
+                print("-" * 80)
+
         end_time = time.time()
         duration = round(end_time - start_time, 2)
 
-        save_to_log(f"\n[{idx} - Attempt {attempt}] {graph_type}/{graph_name}")
+        if not inference_success:
+            unjudged_graphs.append({
+                "index": idx,
+                "graph_type": graph_type,
+                "graph_name": graph_name,
+                "attempt": attempt,
+                "nodes": len(graph.vertices),
+                "edges": len(graph.edges),
+                "reason": error_msg,
+            })
 
+        save_to_log(f"\n[{idx} - Attempt {attempt}] {graph_type}/{graph_name} (Encoding: {encoding_method})")
         save_to_log(f"Prompt to the LLM: \n{prompt}")
-
         save_to_log(f"LLM's Complete, Unedited Response: \n{response}")
 
         csv_row = {
@@ -492,7 +535,8 @@ def run_slm_inference():
 
         state_to_save = {
             "combinations": combinations,
-            "next_idx": idx
+            "next_idx": idx,
+            "unjudged_graphs": unjudged_graphs,
         }
         with open(PROGRESS_FILE, "w", encoding="utf-8") as f:
             json.dump(state_to_save, f, indent=4)
@@ -500,6 +544,12 @@ def run_slm_inference():
     if os.path.exists(PROGRESS_FILE):
         os.remove(PROGRESS_FILE)
     print("\n✅ SLM Inference completed.")
+
+    # ── Report on unjudged / context-exceeded graphs ──────────────────────────
+    if unjudged_graphs:
+        unjudged_report = format_unjudged_graphs_report(unjudged_graphs)
+        print(unjudged_report)
+        save_to_log(unjudged_report)
 
 
 # ============================================================================
@@ -596,6 +646,38 @@ def _fmt_degrees(degrees):
     lines = []
     for v, d in degrees.items():
         lines.append(f"  {v}: in={d.get('in_degree','?')}  out={d.get('out_degree','?')}")
+    return "\n".join(lines)
+
+
+def format_unjudged_graphs_report(unjudged_list) -> str:
+    """Format a comprehensive summary report of graphs that could not be evaluated."""
+    if not unjudged_list:
+        return (
+            "\n" + "=" * 92 + "\n"
+            + "ALL GRAPHS PROCESSED SUCCESSFULLY — NO UNJUDGED / EXCEEDED GRAPHS\n"
+            + "=" * 92 + "\n"
+        )
+
+    lines = [
+        "",
+        "=" * 92,
+        "UNJUDGED / CONTEXT EXCEEDED GRAPHS REPORT",
+        "=" * 92,
+        f"Total graphs/attempts that could not be evaluated: {len(unjudged_list)}",
+        "-" * 92,
+        f"{'Idx':<6} {'Type':<12} {'Graph Name':<16} {'Attempt':<9} {'Nodes':<8} {'Edges':<8} {'Reason':<30}",
+        "-" * 92,
+    ]
+    for item in unjudged_list:
+        reason_short = str(item.get('reason', ''))
+        if len(reason_short) > 35:
+            reason_short = reason_short[:32] + "..."
+        lines.append(
+            f"{str(item.get('index', '?')):<6} {str(item.get('graph_type', '')):<12} {str(item.get('graph_name', '')):<16} "
+            f"{str(item.get('attempt', '')):<9} {str(item.get('nodes', '')):<8} {str(item.get('edges', '')):<8} {reason_short:<30}"
+        )
+    lines.append("=" * 92)
+    lines.append("")
     return "\n".join(lines)
 
 
@@ -814,6 +896,14 @@ def run_graph_structure_judge():
             continue
 
         response = str(row["Raw Response"])
+        if response.startswith("ERROR:") or response.strip() == "" or response == "None":
+            print(f"  ⚠️ Skipping row {index + 1}: Inference had previously failed ({response[:50]}...)")
+            df.at[index, "Number of Nodes"] = len(graph.vertices)
+            df.at[index, "Number of Edges"] = len(graph.edges)
+            df.at[index, "Total Score (100)"] = ""
+            df.at[index, "Metadata Error Reason"] = "Inference Error / Context Exceeded"
+            continue
+
         sc = score_response(response, graph)
         score_accumulator.append(sc["total_score"])
 
@@ -912,6 +1002,27 @@ def run_graph_structure_judge():
     comparative_analysis_str = generate_comparative_analysis(df)
     print(comparative_analysis_str)
     judge_log_lines.append(comparative_analysis_str)
+
+    # ── Report of Unjudged / Exceeded Graphs ──────────────────────────────────
+    unjudged_in_judge = []
+    for index, row in df.iterrows():
+        raw = str(row.get("Raw Response", ""))
+        tot = row.get("Total Score (100)")
+        if raw.startswith("ERROR:") or pd.isna(tot) or str(tot).strip() == "":
+            unjudged_in_judge.append({
+                "index": index + 1,
+                "graph_type": row.get("Graph Type"),
+                "graph_name": row.get("Graph Folder"),
+                "attempt": row.get("Attempt"),
+                "nodes": row.get("Number of Nodes"),
+                "edges": row.get("Number of Edges"),
+                "reason": raw if raw.startswith("ERROR:") else "Unjudged / missing response",
+            })
+
+    if unjudged_in_judge:
+        unjudged_report = format_unjudged_graphs_report(unjudged_in_judge)
+        print(unjudged_report)
+        judge_log_lines.append(unjudged_report)
 
     full_log = "\n".join(judge_log_lines)
     save_to_log(full_log)
