@@ -60,10 +60,16 @@ First see exact model identifiers:
 & $lms ls
 ```
 
-Then load one:
+Then load one with a custom context window (e.g., 16384 or 32768 tokens to prevent 400 context errors):
 
 ```powershell
-& $lms load google/gemma-3-4b
+& $lms load google/gemma-3-4b -c 16384
+```
+
+Or for very large graphs:
+
+```powershell
+& $lms load google/gemma-3-4b -c 32768
 ```
 
 ### Unload a model

@@ -449,12 +449,16 @@ def run_slm_inference():
         
         attempt = combo.get('attempt', 1)
         start_time = time.time()
-        response = call_model(prompt)
+        try:
+            response = call_model(prompt)
+            print("LLM's Complete, Unedited Response:", response)
+            print("-" * 80)
+        except Exception as e:
+            response = f"ERROR: {e}"
+            print(f"  ❌ Inference failed: {e}")
+            print("-" * 80)
         end_time = time.time()
         duration = round(end_time - start_time, 2)
-
-        print("LLM's Complete, Unedited Response:", response)
-        print("-" * 80)
 
         save_to_log(f"\n[{idx} - Attempt {attempt}] {graph_type}/{graph_name}")
 

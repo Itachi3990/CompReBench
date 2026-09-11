@@ -412,12 +412,16 @@ def run_slm_inference():
         attempt = combo.get('attempt', 1)
         print(f"\n--- Attempt {attempt} ---")
         start_time = time.time()
-        response = call_model(prompt)
+        try:
+            response = call_model(prompt)
+            print("LLM's Complete, Unedited Response:", response)
+            print("-" * 80)
+        except Exception as e:
+            response = f"ERROR: {e}"
+            print(f"  ❌ Inference failed: {e}")
+            print("-" * 80)
         end_time = time.time()
         duration = round(end_time - start_time, 2)
-
-        print("LLM's Complete, Unedited Response:", response)
-        print("-" * 80)
 
         extracted_category = extract_problem_category_from_response(response)
         extracted_algo = extract_algorithm_from_response(response)
