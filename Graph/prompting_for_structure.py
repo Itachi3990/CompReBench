@@ -26,13 +26,13 @@ random = random.SystemRandom()
 # Model configuration
 USE_SLM = True  # Set to True to use local Gemma SLM (via LM Studio), False to use Gemini via agy CLI
 LM_STUDIO_URL = "http://127.0.0.1:1234/v1/chat/completions"
-LM_STUDIO_MODEL = "google/gemma-3-4b"
+LM_STUDIO_MODEL = "qwen3-4b-thinking-2507"
 SLM_TEMPERATURE = 0.3
 
 # Set to None to process all combinations, or an integer to limit prompts
 MAX_PROMPTS_COUNT = None  # if None then, ALL prompts are fed to the LLM/SLM; otherwise if some integer value then, only the first MAX_PROMPTS_COUNT prompts are fed to the LLM/SLM, and then the script stops running after that
 NUMBER_OF_GRAPHS = None # if None then, ALL graphs are selected; otherwise if integer value then, that many graphs are selected.
-NUMBER_OF_PROMPTS_PER_GRAPH = 3 # the LLM or SLM will be tested with the exact same graph this many times (API calls are memoryless anyway)
+NUMBER_OF_PROMPTS_PER_GRAPH = 2 # the LLM or SLM will be tested with the exact same graph this many times (API calls are memoryless anyway)
 
 # Base directories
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
